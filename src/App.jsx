@@ -4,6 +4,7 @@ import L from 'leaflet';
 import { MapContainer, TileLayer } from 'react-leaflet';  // initializes and manages the Leaflet map 
 import 'leaflet/dist/leaflet.css';
 import {  Marker, Popup, useMapEvents } from 'react-leaflet';
+import { Routes, Route, useNavigate } from "react-router-dom";
 
 function ClickHandler( { onMapClick, uiLocked }){
     useMapEvents({
@@ -19,7 +20,23 @@ function ClickHandler( { onMapClick, uiLocked }){
     return null;
 }
 
-function App() {
+function SecondScreen() {
+  const navigate = useNavigate();
+
+  return (
+    <div>
+      <h1>Welcome to the Avatar Screen</h1>
+
+      <button onClick={() => navigate("/")}>
+        Go Back to Map
+      </button>
+    </div>
+  );
+}
+
+function MapScreen() {
+
+  const navigate = useNavigate();
 
   // Keeps track of saved locations
   const [locations, setLocations] = useState([]);
@@ -153,6 +170,13 @@ function App() {
     
 
     <div style={{ height: '100vh', width: '100vw'}}>
+
+        {/* <div className=""> */}
+          <button onClick={() => navigate("/second")} >
+            Go to Second Screen
+          </button>
+        {/* </div> */}
+        
     
         {/* This is where the map lives */}
         <MapContainer
@@ -185,7 +209,6 @@ function App() {
                   </div>
                 </div>
 
-
                 {/* {loc.loading && (
                   <div className="section">
                     <div className="spinner" />
@@ -207,6 +230,15 @@ function App() {
 
     </div>
   )
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<MapScreen />} />
+      <Route path="/second" element={<SecondScreen />} />
+    </Routes>
+  );
 }
 
 export default App
