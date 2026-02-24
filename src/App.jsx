@@ -23,28 +23,110 @@ function ClickHandler( { onMapClick, uiLocked }){
 function SecondScreen() {
   const navigate = useNavigate();
 
+  // For selecting loadout (full set of equipped items)
+  const [equipped, setEquipped] = useState({
+    hat: null,
+    body: null,
+    outside: null,
+  });
+
+  const ACCESSORIES = [
+    { id: "hat_crown", type: "hat", name: "Crown", src: "/Roamie-Crown-2.png" },
+    { id: "body_coat", type: "body", name: "Coat", src: "/Roamie-Coat-2.png" },
+    { id: "outside_item", type: "outside", name: "Shield", src: "/Roamie-Shield-2.png" },
+
+  ];
+
+  function equipAccessory(item) {
+    setEquipped(prev => ({
+      ...prev,
+      [item.type]: item,     // replaces hat/body/outside automatically
+    }));
+  }
+
+  function toggleAccessory(item) {
+    setEquipped(prev => ({
+      ...prev,
+      [item.type]: prev[item.type]?.id === item.id ? null : item
+    }));
+  }
+
+  function AccessoriesPanel({ items, equipped, onSelect }) {
+    return (
+      <div className="accessory-panel">
+        {items.map(item => {
+          const isEquipped = equipped[item.type]?.id === item.id;
+
+          return (
+            <button
+              key={item.id}
+              className={`accessory-item ${isEquipped ? "equipped" : ""}`}
+              onClick={() => onSelect(item)}
+              type="button"
+            >
+              <img src={item.src} alt={item.name} />
+            </button>
+          );
+        })}
+      </div>
+      
+    );
+  }
+
   return (
-    <div className="room">
 
-      <div>
-        <br></br><br></br><br></br>
+    <div className="avatar-screen">
+      <div className="room">
+
+        <div>
+          <br></br><br></br><br></br>
+        </div>
+
+        <h1>Welcome to the Avatar Screen</h1>
+
+        <div className="avatar-container">
+
+          <img src="/Roamie-Dog-2.png" width="230px"></img>
+
+
+          {/* Accessory */}
+
+          {equipped.hat && (
+            <img className="accessory accessory-hat" src={equipped.hat.src} alt={equipped.hat.name} />
+          )}
+
+          {equipped.body && (
+            <img className="accessory accessory-body" src={equipped.body.src} alt={equipped.body.name} />
+          )}
+
+          {equipped.outside && (
+            <img className="accessory accessory-outside" src={equipped.outside.src} alt={equipped.outside.name} />
+          )}
+
+
+        </div>
+        
       </div>
+  <div>
+    <AccessoriesPanel
+        items={ACCESSORIES}
+        equipped={equipped}
+        onSelect={toggleAccessory} // or equipAccessory
+    />
 
-      <h1>Welcome to the Avatar Screen</h1>
+    <div>
+      <br></br>
+    </div>
 
-
-      <img src="/Roamie-Dog-2.png" width="230px"></img>
-
-      <div>
-        <br></br>
-      </div>
-
+    <div className="buttons">
       <button onClick={() => navigate("/")}>
         Go Back to Map
       </button>
     </div>
-  );
-}
+    
+  </div>
+  </div>
+)}
 
 function MapScreen() {
 
@@ -183,11 +265,14 @@ function MapScreen() {
 
     <div style={{ height: '100vh', width: '100vw'}}>
 
-        {/* <div className=""> */}
+        <div className="buttons">
           <button onClick={() => navigate("/second")} >
-            Go to Second Screen
+            Avatar
           </button>
-        {/* </div> */}
+          {/* <button onClick={() => navigate("/third")} >
+            Profile
+          </button> */}
+        </div>
         
     
         {/* This is where the map lives */}
