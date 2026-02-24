@@ -24,8 +24,20 @@ function SecondScreen() {
   const navigate = useNavigate();
 
   return (
-    <div>
+    <div className="room">
+
+      <div>
+        <br></br><br></br><br></br>
+      </div>
+
       <h1>Welcome to the Avatar Screen</h1>
+
+
+      <img src="/Roamie-Dog-2.png" width="230px"></img>
+
+      <div>
+        <br></br>
+      </div>
 
       <button onClick={() => navigate("/")}>
         Go Back to Map
@@ -182,7 +194,7 @@ function MapScreen() {
         <MapContainer
           center={[43.0401221381528, -71.45140083791992]} // SNHU coordinates
           zoom={16}
-          style={{ height: '90%', width: '90%'}}
+          style={{ height: '100%', width: '100%'}}
         >
 
         {/* TileLayer defines the source of the map imagery */}
