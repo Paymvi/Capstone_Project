@@ -4,6 +4,7 @@ import L from 'leaflet';
 import { MapContainer, TileLayer } from 'react-leaflet';  // initializes and manages the Leaflet map 
 import 'leaflet/dist/leaflet.css';
 import {  Marker, Popup, useMapEvents } from 'react-leaflet';
+import { Routes, Route, useNavigate } from "react-router-dom";
 
 function ClickHandler( { onMapClick, uiLocked }){
     useMapEvents({
@@ -19,7 +20,117 @@ function ClickHandler( { onMapClick, uiLocked }){
     return null;
 }
 
-function App() {
+function SecondScreen() {
+  const navigate = useNavigate();
+
+  // For selecting loadout (full set of equipped items)
+  const [equipped, setEquipped] = useState({
+    hat: null,
+    body: null,
+    outside: null,
+  });
+
+  const ACCESSORIES = [
+    { id: "hat_crown", type: "hat", name: "Crown", src: "/Roamie-Crown-2.png" },
+    { id: "body_coat", type: "body", name: "Coat", src: "/Roamie-Coat-2.png" },
+    { id: "outside_item", type: "outside", name: "Shield", src: "/Roamie-Shield-2.png" },
+
+  ];
+
+  function equipAccessory(item) {
+    setEquipped(prev => ({
+      ...prev,
+      [item.type]: item,     // replaces hat/body/outside automatically
+    }));
+  }
+
+  function toggleAccessory(item) {
+    setEquipped(prev => ({
+      ...prev,
+      [item.type]: prev[item.type]?.id === item.id ? null : item
+    }));
+  }
+
+  function AccessoriesPanel({ items, equipped, onSelect }) {
+    return (
+      <div className="accessory-panel">
+        {items.map(item => {
+          const isEquipped = equipped[item.type]?.id === item.id;
+
+          return (
+            <button
+              key={item.id}
+              className={`accessory-item ${isEquipped ? "equipped" : ""}`}
+              onClick={() => onSelect(item)}
+              type="button"
+            >
+              <img src={item.src} alt={item.name} />
+            </button>
+          );
+        })}
+      </div>
+      
+    );
+  }
+
+  return (
+
+    <div className="avatar-screen">
+      <div className="room">
+
+        <div>
+          <br></br><br></br><br></br>
+        </div>
+
+        <h1>Welcome to the Avatar Screen</h1>
+
+        <div className="avatar-container">
+
+          <img src="/Roamie-Dog-2.png" width="230px"></img>
+
+
+          {/* Accessory */}
+
+          {equipped.hat && (
+            <img className="accessory accessory-hat" src={equipped.hat.src} alt={equipped.hat.name} />
+          )}
+
+          {equipped.body && (
+            <img className="accessory accessory-body" src={equipped.body.src} alt={equipped.body.name} />
+          )}
+
+          {equipped.outside && (
+            <img className="accessory accessory-outside" src={equipped.outside.src} alt={equipped.outside.name} />
+          )}
+
+
+        </div>
+        
+      </div>
+  <div>
+    <AccessoriesPanel
+        items={ACCESSORIES}
+        equipped={equipped}
+        onSelect={toggleAccessory} // or equipAccessory
+    />
+
+    <div>
+      <br></br>
+    </div>
+
+    <div className="buttons">
+      <button onClick={() => navigate("/")}>
+        Go Back to Map
+      </button>
+    </div>
+    
+  </div>
+  </div>
+)}
+
+function MapScreen() {
+
+  const navigate = useNavigate();
 
   // Keeps track of saved locations
   const [locations, setLocations] = useState([]);
@@ -153,12 +264,22 @@ function App() {
     
 
     <div style={{ height: '100vh', width: '100vw'}}>
+
+        <div className="buttons">
+          <button onClick={() => navigate("/second")} >
+            Avatar
+          </button>
+          {/* <button onClick={() => navigate("/third")} >
+            Profile
+          </button> */}
+        </div>
+        
     
         {/* This is where the map lives */}
         <MapContainer
           center={[43.0401221381528, -71.45140083791992]} // SNHU coordinates
           zoom={16}
-          style={{ height: '90%', width: '90%'}}
+          style={{ height: '100%', width: '100%'}}
         >
 
         {/* TileLayer defines the source of the map imagery */}
@@ -185,7 +306,6 @@ function App() {
                   </div>
                 </div>
 
-
                 {/* {loc.loading && (
                   <div className="section">
                     <div className="spinner" />
@@ -207,6 +327,15 @@ function App() {
 
     </div>
   )
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<MapScreen />} />
+      <Route path="/second" element={<SecondScreen />} />
+    </Routes>
+  );
 }
 
 export default App
