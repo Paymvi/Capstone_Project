@@ -511,3 +511,30 @@ button.delete:hover {
   box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
   background: #f0fff4;
 }
+
+
+
+
+/* Alert that you collected the item drop */
+.proximity-alert {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  
+  background: #ffffff;
+  color: black;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-weight: bold;
+
+  opacity: 1;
+  animation: fadeOut 1s forwards;
+  z-index: 1000;
+}
+@keyframes fadeOut {
+  0% { opacity: 2; }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
