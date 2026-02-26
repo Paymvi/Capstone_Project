@@ -729,11 +729,9 @@ const [staticLocations, setStaticLocations] = useState([
 }
 
 function App() {
+  const token = localStorage.getItem("token");
 
   const [collectedItems, setCollectedItems] = useState([]);
-  // Looks something like: ["hat_crown", "hat_flower"]
-
-  // For selecting loadout (full set of equipped items)
   const [equipped, setEquipped] = useState({
     hat: null,
     body: null,
