@@ -22,17 +22,11 @@ function ClickHandler( { onMapClick, uiLocked, isDraggingPegman }){
     return null;
 }
 
-function SecondScreen({ collectedItems }) {
+function SecondScreen({ collectedItems, equipped, setEquipped }) {
   const navigate = useNavigate();
 
-  // For selecting loadout (full set of equipped items)
-  const [equipped, setEquipped] = useState({
-    hat: null,
-    body: null,
-    outside: null,
-  });
-
   // ALL Accessories
+  // 123456
   const ACCESSORIES = [
     { 
       id: "hat_crown",                // crown
@@ -64,7 +58,7 @@ function SecondScreen({ collectedItems }) {
     
     },
     { 
-      id: "outside_item",             // shield
+      id: "outside_shield",             // shield
       type: "outside", 
       name: "Shield", 
       src: "/Roamie-Shield-2.png",
@@ -233,32 +227,59 @@ const [staticLocations, setStaticLocations] = useState([
     img: "/Roamie-Dumbbell-2.png",
     accessoryId: "outside_dumbbell",
     radius: 30,
-    collected: false
+  },
+  {
+    id: 4,
+    position: [43.03951261124411, -71.45159125328065],
+    title: "Santa Hat",
+    description: "Santa hat drop!!!",
+    img: "/Roamie-SantaHat.png",
+    accessoryId: "hat_santahat",
+    radius: 30,
+
+  },
+  {
+    id: 5,
+    position: [43.04064962199054, -71.4509153366089],
+    title: "Coat",
+    description: "Stay warm and collect this fluffy coat!!!",
+    img: "/Roamie-Coat-2.png",
+    accessoryId: "body_coat",
+    radius: 30,
+  },
+  {
+    id: 6,
+    position: [43.04091622835737, -71.45213842391969],
+    title: "Shield",
+    description: "Collect this Shiny Shield!!!",
+    img: "/Roamie-Shield-2.png",
+    accessoryId: "outside_shield",
+    radius: 30,
   }
 ]);
 
   // This checks to see if you collected an item everytime the map rerenders
   useEffect(() => {
     staticLocations.forEach((loc) => {
-      if (loc.collected) return;
+      
+      // Skip if already collected (using global state)
+      if (collectedItems.includes(loc.accessoryId)) return;
 
       const distance = L.latLng(pegmanPosition)
         .distanceTo(L.latLng(loc.position));
 
       if (distance <= loc.radius) {
-        setCollectedItems(prev => [...prev, loc.accessoryId]);
+        
+        setCollectedItems(prev =>
+          prev.includes(loc.accessoryId)
+            ? prev
+            : [...prev, loc.accessoryId]
+        );
         setMessage(`🎉 You collected the ${loc.title}!!`);
 
-        setStaticLocations((prev) =>
-          prev.map((item) =>
-            item.id === loc.id
-              ? { ...item, collected: true }
-              : item
-          )
-        );
       }
     });
-  }, [pegmanPosition]);
+  }, [pegmanPosition, collectedItems]);
 
   useEffect(() => {
     if (!message) return;
@@ -445,7 +466,7 @@ const [staticLocations, setStaticLocations] = useState([
               setTimeout(() => {
                 isDraggingPegman.current = false;
   
-              }, 50);
+              }, 20);
             },
           }}
         />
@@ -458,7 +479,7 @@ const [staticLocations, setStaticLocations] = useState([
 
         {/* Static Markers */}
         {staticLocations
-          .filter((loc) => !loc.collected) // hide collected ones
+          .filter((loc) => !collectedItems.includes(loc.accessoryId)) // hide collected ones (uses global state)
           .map((loc) => (
             <Marker key={loc.id} position={loc.position}>
               <Popup className="custom-popup">
@@ -543,6 +564,13 @@ function App() {
   const [collectedItems, setCollectedItems] = useState([]);
   // Looks something like: ["hat_crown", "hat_flower"]
 
+  // For selecting loadout (full set of equipped items)
+  const [equipped, setEquipped] = useState({
+    hat: null,
+    body: null,
+    outside: null,
+  });
+
 
   return (
     <Routes>
@@ -554,6 +582,7 @@ function App() {
           <MapScreen 
             collectedItems={collectedItems}
             setCollectedItems={setCollectedItems}
+
           />
         } 
       />
@@ -563,6 +592,8 @@ function App() {
         element={
           <SecondScreen 
             collectedItems={collectedItems}
+            equipped={equipped}
+            setEquipped={setEquipped}
           />
         } 
       />
