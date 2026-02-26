@@ -194,6 +194,34 @@ function MapScreen() {
 
   // ------------------------------------------------------------------------
 
+// Static locations for item drops
+const staticLocations = [
+  {
+    id: 1,
+    position: [43.03881471145394, -71.45190238952638],
+    title: "Library",
+    description: "Collect your crown at the library!",
+    img: "/Roamie-Crown-2.png"
+  },
+  {
+    id: 2,
+    position: [43.039763539565556, -71.45380139350893],
+    title: "Student Center",
+    description: "Flower Power Drop!!!",
+    img: "/Roamie-Flower.png"
+  },
+  {
+    id: 3,
+    position: [43.038673562216715, -71.45618319511415],
+    title: "Gym",
+    description: "Collect this limited edition dumbbell!",
+    img: "/Roamie-Dumbbell-2.png"
+  }
+];
+
+
+
+
   const [currentIcon, setCurrentIcon] = useState();
   const personaIcon = L.icon({
     iconUrl: '/pin.png',
@@ -379,6 +407,43 @@ function MapScreen() {
           isDraggingPegman={isDraggingPegman}
         />
 
+        {/* Static Markers */}
+        {staticLocations.map((loc) => (
+          <Marker key={loc.id} position={loc.position}>
+            <Popup className="custom-popup">
+              <div className="popup-content">
+                <div className="title">{loc.title}</div>
+              </div>
+
+
+              <div className="section">
+                  <div className= "info">
+                    
+                    <div style={{ textAlign: "center" }}>
+                      <img 
+                        src={loc.img}
+                        alt={loc.title}
+                        style={{
+                          width: "80px",
+                          marginLeft: "auto",
+                          marginRight: "auto"
+                        }}
+                      />
+                    </div>
+
+                    {loc.description}
+
+                    <br></br>
+                    
+                  </div>
+              </div>
+              
+              
+            </Popup>
+          </Marker>
+        ))}
+
+        {/* User Added Markers */}
         {locations.map((loc, i) => (
           <Marker key={i} position={loc.latlng} icon={currentIcon || personaIcon}>
             
@@ -402,8 +467,6 @@ function MapScreen() {
 
               </div>
             </Popup>
-
-
           </Marker>
         ))}
 
