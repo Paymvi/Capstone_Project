@@ -488,3 +488,26 @@ button.delete:hover {
 .accessory-hat { bottom: 77%; height: 40px; left: 44% }
 .accessory-body { bottom: 8%; height: 90px; left: 45%}
 .accessory-outside { bottom: 10%; height: 100px; left: 65%}
+
+
+
+/* For Extra responsiveness */
+.accessory-item:hover {
+  background-color: #e8e8e8;
+  transform: translateY(-1px); /* subtle lift on hover */
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  transition: all 0.12s ease;
+
+  box-shadow: 0 2px 18px rgba(0, 0, 0, 0.15);
+  border: 2px solid #55853a;
+}
+
+.accessory-item:active {
+  transform: scale(0.97);
+}
+
+.accessory-item.equipped {
+  border: 2px solid #4CAF50;
+  box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+  background: #f0fff4;
+}
