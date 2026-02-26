@@ -32,3 +32,22 @@ Conventional Commits:
     style: → formatting / CSS
     docs: → documentation
     chore: → setup/config changes
+
+
+How to rebase:
+    git branch
+    git switch new-branch
+    git fetch origin
+
+    *Make sure you've commited and pushed to the branch*
+    git rebase origin/main
+
+    *remove conflicts* then git add .
+    git rebase --continue
+
+    git push --force
+    OR
+    git push --force --set-upstream origin deposit
+
+    If you mess up:
+        git rebase --abort
