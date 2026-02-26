@@ -8,6 +8,79 @@ import { Routes, Route, useNavigate } from "react-router-dom";
 import { useRef } from "react"; // ref flag... it takes note of changes but doesn't actively update/redraw the screen
 import { useEffect } from 'react';
 
+
+// Music
+function BackgroundMusic() {
+
+  // This does not cause re renders when changed
+  const audioRef = useRef(null);
+
+  const [isPlaying, setIsPlaying] = useState(false); // Nothing plays under after rendering
+
+  useEffect(() => {
+    const audio = audioRef.current;
+
+    if (!audio) return; // safety check
+
+    audio.loop = true;  // so it loops forever
+
+    // Try to autoplay
+    audio.play()
+      .then(() => {
+        setIsPlaying(true);
+      })
+      .catch(() => {
+
+        // If the autoplay fails (most browsers will block it) just wait for the user to click something
+        const startOnClick = () => {
+          audio.play();
+          setIsPlaying(true);
+
+          // Remove listener after the first click
+          window.removeEventListener("click", startOnClick);
+        };
+        window.addEventListener("click", startOnClick);
+      });
+
+  }, []); // empty array
+
+  // This toggle music function plays when the button is clicked
+  const toggleMusic = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (isPlaying) {
+      // If it is currently playing, then pause it
+      audio.pause();
+      setIsPlaying(false);
+    } else {
+      // If currently paused, then play it
+      audio.play();
+      setIsPlaying(true);
+    }
+  };
+
+  return (
+    <>
+      {/* The actual audio */}
+      <audio ref={audioRef} src="/theme.mpeg" />
+
+      {/* Music control button */}
+      <button
+        onClick={toggleMusic}
+        style={{
+          position: "absolute",
+          top: "20px",
+          right: "20px",
+          zIndex: 1000
+        }}
+      >
+        {isPlaying ? "🔇 Stop Music" : "🔊 Play Music"}
+      </button>
+    </>
+  );
+}
+
 function ClickHandler( { onMapClick, uiLocked, isDraggingPegman }){
     useMapEvents({
 
@@ -275,7 +348,7 @@ const [staticLocations, setStaticLocations] = useState([
             ? prev
             : [...prev, loc.accessoryId]
         );
-        setMessage(`🎉 You collected the ${loc.title}!!`);
+        setMessage(`🎉 You've collected the ${loc.title}!!`);
 
       }
     });
@@ -573,33 +646,35 @@ function App() {
 
 
   return (
-    <Routes>
+    <>
+    <BackgroundMusic />
+      <Routes>
+
+        <Route 
+          path="/" 
+          element={
+            <MapScreen 
+              collectedItems={collectedItems}
+              setCollectedItems={setCollectedItems}
+
+            />
+          } 
+        />
+
+        <Route 
+          path="/second" 
+          element={
+            <SecondScreen 
+              collectedItems={collectedItems}
+              equipped={equipped}
+              setEquipped={setEquipped}
+            />
+          } 
+        />
 
 
-      <Route 
-        path="/" 
-        element={
-          <MapScreen 
-            collectedItems={collectedItems}
-            setCollectedItems={setCollectedItems}
-
-          />
-        } 
-      />
-
-      <Route 
-        path="/second" 
-        element={
-          <SecondScreen 
-            collectedItems={collectedItems}
-            equipped={equipped}
-            setEquipped={setEquipped}
-          />
-        } 
-      />
-
-
-    </Routes>
+      </Routes>
+    </>
   );
 }
 
