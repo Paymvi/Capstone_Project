@@ -36,14 +36,13 @@ app.post("/users", async(req, res) => {
     catch(err){
         console.error(err);
 
-        // Unique error handling
-        if(err.code === "23505"){
-            res.status(409).json({
+        if (err.code === "23505") {
+            return res.status(409).json({
                 error: "Email already exists!"
-            })
+            });
         }
 
-        res.status(500).json({error: err.message});
+        res.status(500).json({ error: err.message });
     }
 })
 
@@ -63,14 +62,21 @@ app.get("/users", async(req, res) => {
 app.post("/auth/google", async(req, res) => {
     const {token} = req.body;
 
+    console.log("=== AUTH REQUEST RECEIVED ===");
+    console.log("Token:", token);
+    console.log("GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID);
+
     try{
-        const ticket = await client.verifyIdtoken({
+        const ticket = await client.verifyIdToken({
             idToken: token,
             audience: process.env.GOOGLE_CLIENT_ID,
         });
 
         const payload = ticket.getPayload();
         const {sub, email, name} = payload;
+
+        console.log("Incoming token:", token);
+        console.log("Payload:", payload);
 
         // Check if a user exists
         let result = await pool.query(
@@ -83,7 +89,7 @@ app.post("/auth/google", async(req, res) => {
         if (result.rows.length === 0){
             // Create user
             const newUser = await pool.query(
-                "INSERT INTO users (google_sub, email, name) VALUES (1, $2, $3) RETURNING *",
+                "INSERT INTO users (google_sub, email, name) VALUES ($1, $2, $3) RETURNING *",
                 [sub, email, name]
             );
 
