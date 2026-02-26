@@ -203,7 +203,7 @@ app.post("/users", async(req, res) => {
 
         if (err.code === "23505") {
             return res.status(409).json({
-                error: "Username already exists!"
+                error: "Email already exists!"
             });
         }
 
@@ -250,6 +250,7 @@ app.post("/auth/google", async(req, res) => {
         );
 
         let user;
+
 
         if (result.rows.length > 0){
             user = result.rows[0];
