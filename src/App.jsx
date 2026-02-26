@@ -6,6 +6,7 @@ import 'leaflet/dist/leaflet.css';
 import {  Marker, Popup, useMapEvents } from 'react-leaflet';
 import { Routes, Route, useNavigate } from "react-router-dom";
 import { useRef } from "react"; // ref flag... it takes note of changes but doesn't actively update/redraw the screen
+import { useEffect } from 'react';
 
 function ClickHandler( { onMapClick, uiLocked, isDraggingPegman }){
     useMapEvents({
@@ -178,6 +179,8 @@ function MapScreen() {
   const [locations, setLocations] = useState([]);
 
   const [uiLocked, setUiLocked] = useState(false);
+
+  const [message, setMessage] = useState(null);
   
 
   // --------------------------------- Pegman ------------------------------
@@ -195,31 +198,68 @@ function MapScreen() {
   // ------------------------------------------------------------------------
 
 // Static locations for item drops
-const staticLocations = [
+// Need to turn it into state to update "collected"
+const [staticLocations, setStaticLocations] = useState([
   {
     id: 1,
     position: [43.03881471145394, -71.45190238952638],
     title: "Library",
     description: "Collect your crown at the library!",
-    img: "/Roamie-Crown-2.png"
+    img: "/Roamie-Crown-2.png",
+    radius: 30,   // 30 meters
+    collected: false
   },
   {
     id: 2,
     position: [43.039763539565556, -71.45380139350893],
     title: "Student Center",
     description: "Flower Power Drop!!!",
-    img: "/Roamie-Flower.png"
+    img: "/Roamie-Flower.png",
+    radius: 30,
+    collected: false
   },
   {
     id: 3,
     position: [43.038673562216715, -71.45618319511415],
     title: "Gym",
     description: "Collect this limited edition dumbbell!",
-    img: "/Roamie-Dumbbell-2.png"
+    img: "/Roamie-Dumbbell-2.png",
+    radius: 30,
+    collected: false
   }
-];
+]);
 
+  // This checks to see if you collected an item everytime the map rerenders
+  useEffect(() => {
+    staticLocations.forEach((loc) => {
+      if (loc.collected) return;
 
+      const distance = L.latLng(pegmanPosition)
+        .distanceTo(L.latLng(loc.position));
+
+      if (distance <= loc.radius) {
+        setMessage("🎉 Congrats, you collected the item!");
+
+        setStaticLocations((prev) =>
+          prev.map((item) =>
+            item.id === loc.id
+              ? { ...item, collected: true }
+              : item
+          )
+        );
+      }
+    });
+  }, [pegmanPosition]);
+
+  useEffect(() => {
+    if (!message) return;
+
+    const timer = setTimeout(() => {
+      setMessage(null);
+    }, 1000); // 1 second
+
+    return () => clearTimeout(timer);
+  }, [message]);
 
 
   const [currentIcon, setCurrentIcon] = useState();
@@ -392,7 +432,7 @@ const staticLocations = [
 
               console.log("Pegman coordinates:", coords);
 
-              // Small timeout prevents click firindg after drag
+              // Small timeout prevents click firing after drag
               setTimeout(() => {
                 isDraggingPegman.current = false;
   
@@ -408,39 +448,41 @@ const staticLocations = [
         />
 
         {/* Static Markers */}
-        {staticLocations.map((loc) => (
-          <Marker key={loc.id} position={loc.position}>
-            <Popup className="custom-popup">
-              <div className="popup-content">
-                <div className="title">{loc.title}</div>
-              </div>
+        {staticLocations
+          .filter((loc) => !loc.collected) // hide collected ones
+          .map((loc) => (
+            <Marker key={loc.id} position={loc.position}>
+              <Popup className="custom-popup">
+                <div className="popup-content">
+                  <div className="title">{loc.title}</div>
+                </div>
 
 
-              <div className="section">
-                  <div className= "info">
-                    
-                    <div style={{ textAlign: "center" }}>
-                      <img 
-                        src={loc.img}
-                        alt={loc.title}
-                        style={{
-                          width: "80px",
-                          marginLeft: "auto",
-                          marginRight: "auto"
-                        }}
-                      />
+                <div className="section">
+                    <div className= "info">
+                      
+                      <div style={{ textAlign: "center" }}>
+                        <img 
+                          src={loc.img}
+                          alt={loc.title}
+                          style={{
+                            width: "80px",
+                            marginLeft: "auto",
+                            marginRight: "auto"
+                          }}
+                        />
+                      </div>
+
+                      {loc.description}
+
+                      <br></br>
+                      
                     </div>
-
-                    {loc.description}
-
-                    <br></br>
-                    
-                  </div>
-              </div>
-              
-              
-            </Popup>
-          </Marker>
+                </div>
+                
+                
+              </Popup>
+            </Marker>
         ))}
 
         {/* User Added Markers */}
@@ -469,6 +511,14 @@ const staticLocations = [
             </Popup>
           </Marker>
         ))}
+
+
+        {/* Item drop collection */}
+        {message && (
+          <div className="proximity-alert">
+            {message}
+          </div>
+        )}
 
 
         </MapContainer>
