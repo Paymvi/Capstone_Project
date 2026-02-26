@@ -5,10 +5,18 @@ const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
 const authMiddleware = require("./middleware/authMiddleware");
+const bcrypt = require("bcrypt");
+
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+
+app.use((req, res, next) => {
+  console.log(req.method, req.url);
+  next();
+});
 
 // This file is your "database"
 const DB_PATH = path.join(__dirname, "db.json");
@@ -94,43 +102,43 @@ app.get("/state/:userId", (req, res) => {
 
 // ADD MARKER
 // body: { userId: 1, latitude: 40.1, longitude: -73.9 }
-app.post("/markers", (req, res) => {
-  const { userId, latitude, longitude } = req.body;
-  const db = readDB();
-  const user = db.users.find((u) => u.id === Number(userId));
+// app.post("/markers", (req, res) => {
+//   const { userId, latitude, longitude } = req.body;
+//   const db = readDB();
+//   const user = db.users.find((u) => u.id === Number(userId));
 
-  if (!user) return res.status(404).json({ message: "User not found" });
+//   if (!user) return res.status(404).json({ message: "User not found" });
 
-  const marker = {
-    id: Date.now(), // simple unique id for demo
-    latitude: Number(latitude),
-    longitude: Number(longitude),
-  };
+//   const marker = {
+//     id: Date.now(), // simple unique id for demo
+//     latitude: Number(latitude),
+//     longitude: Number(longitude),
+//   };
 
-  user.markers.push(marker);
-  writeDB(db);
+//   user.markers.push(marker);
+//   writeDB(db);
 
-  res.json(marker);
-});
+//   res.json(marker);
+// });
 
 // UPDATE EQUIPPED
 // body: { userId: 1, hat: "hat_crown", body: null, outside: "shield" }
-app.put("/equip", (req, res) => {
-  const { userId, hat, body, outside } = req.body;
-  const db = readDB();
-  const user = db.users.find((u) => u.id === Number(userId));
+// app.put("/equip", (req, res) => {
+//   const { userId, hat, body, outside } = req.body;
+//   const db = readDB();
+//   const user = db.users.find((u) => u.id === Number(userId));
 
-  if (!user) return res.status(404).json({ message: "User not found" });
+//   if (!user) return res.status(404).json({ message: "User not found" });
 
-  user.equipped = {
-    hat: hat ?? null,
-    body: body ?? null,
-    outside: outside ?? null,
-  };
+//   user.equipped = {
+//     hat: hat ?? null,
+//     body: body ?? null,
+//     outside: outside ?? null,
+//   };
 
-  writeDB(db);
-  res.json({ message: "Equipped updated", equipped: user.equipped });
-});
+//   writeDB(db);
+//   res.json({ message: "Equipped updated", equipped: user.equipped });
+// });
 
 // (Optional) CLEAR MARKERS for demo reset
 // body: { userId: 1 }
@@ -195,7 +203,7 @@ app.post("/users", async(req, res) => {
 
         if (err.code === "23505") {
             return res.status(409).json({
-                error: "Email already exists!"
+                error: "Username already exists!"
             });
         }
 
@@ -333,20 +341,20 @@ app.get("/me", (req, res) => {
 });
 
 // Load player state
-app.get("/me/state", async (req, res) => {
+app.get("/me/state", authMiddleware, async (req, res) => {
     const userId = req.user.userId;
     
     try{
         const items = await pool.query(
             `SELECT item_id 
-            FROM user_user_inventory
+            FROM user_inventory
             WHERE user_id = $1`,
             [userId]
         );
 
         const equipment = await pool.query(
             `
-            SELECT hat_item_id, body_id, outside_item_id 
+            SELECT hat_item_id, body_item_id, outside_item_id 
             FROM user_equipment
             WHERE user_id = $1`,
             [userId]
@@ -367,6 +375,7 @@ app.get("/me/state", async (req, res) => {
         });
     }
     catch (err){
+        console.error("STATE ERROR:", err);
         res.status(500).json({error: err.message});
     }
 });
@@ -385,6 +394,8 @@ app.post("/items/collect", authMiddleware, async (req, res) => {
             `,
             [userId, itemId]
         );
+
+        res.json({ success: true });
     }
     catch (err){
         res.status(500).json({error: err.message})
@@ -393,28 +404,31 @@ app.post("/items/collect", authMiddleware, async (req, res) => {
 
 // Equip Item 
 app.put("/equip", authMiddleware, async (req, res) => {
-    const userId = req.user.userId;
-    const {hat, body, outside} = req.body;
 
-    try {
-        await pool.query(
-            `
-            INSERT INTO user_equipment (user_id, hat_item_id, body_item_id, outside_item_id)
-            VALUES ($1, $2, $3, $4)
-            ON CONFLICT (user_id)
-            DO UPDATE SET
-            hat_item_id = EXCLUDED.hat_item_id,
-            body_item_id = EXCLUDED.body_item_id,
-            outside_item_id = EXCLUDED.outside_item_id
-            `,
-            [userId, hat, body, outside]
-        );
+  const userId = req.user.userId;
+  const { hat, body, outside } = req.body;
 
-        req.json({success: true})
-    }
-    catch (err){
-        res.status(500).json({error: err.message})
-    }
+  try {
+    await pool.query(
+      `
+      INSERT INTO user_equipment (user_id, hat_item_id, body_item_id, outside_item_id)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (user_id)
+      DO UPDATE SET
+        hat_item_id = EXCLUDED.hat_item_id,
+        body_item_id = EXCLUDED.body_item_id,
+        outside_item_id = EXCLUDED.outside_item_id
+      `,
+      [userId, hat, body, outside]
+    );
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+
 });
 
 // Save Marker
@@ -423,16 +437,96 @@ app.post("/markers", authMiddleware, async (req, res) => {
     const {latitude, longitude} = req.body;
 
     try{
-        `
-        INSERT INTO markers (user_id, latitude, longitude)
-        VALUES ($1, $2, $3)
-        `,
+        await pool.query(
+            `
+            INSERT INTO markers (user_id, latitude, longitude)
+            VALUES ($1, $2, $3)
+            `
+        ,
         [userId, latitude, longitude]
+        );
+
+        res.json({ success: true });
     }
     catch (err){
         res.status(500).json({error: err.message})
     }
 });
+
+// Register Route
+app.post("/auth/register", async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const result = await pool.query(
+      `INSERT INTO users (username, password_hash)
+       VALUES ($1, $2)
+       RETURNING id, username`,
+      [username, hashedPassword]
+    );
+
+    const user = result.rows[0];
+
+    const token = jwt.sign(
+      { userId: user.id },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({ token, user });
+
+  } catch (err) {
+
+    if (err.code === "23505") {
+      return res.status(409).json({
+        error: "Username already exists"
+      });
+    }
+
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Login Route
+app.post("/auth/login", async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    const result = await pool.query(
+      "SELECT * FROM users WHERE username = $1",
+      [username]
+    );
+
+    const user = result.rows[0];
+
+    if (!user) {
+      return res.status(401).json({ error: "User not found" });
+    }
+
+    const valid = await bcrypt.compare(password, user.password_hash);
+
+    if (!valid) {
+      return res.status(401).json({ error: "Invalid password" });
+    }
+
+    const token = jwt.sign(
+      { userId: user.id },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({ token, user });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 // Test route
 app.get("/health/db", async (_req, res) => {
@@ -448,4 +542,14 @@ app.get("/health/db", async (_req, res) => {
 
 app.listen(PORT, () => {
     console.log(`Server is running on: http://localhost:${PORT}`);
+});
+
+app.get("/tables", async (req, res) => {
+  const result = await pool.query(`
+    SELECT table_name
+    FROM information_schema.tables
+    WHERE table_schema = 'public'
+  `);
+
+  res.json(result.rows);
 });
