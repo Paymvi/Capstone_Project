@@ -5,13 +5,14 @@ import { MapContainer, TileLayer } from 'react-leaflet';  // initializes and man
 import 'leaflet/dist/leaflet.css';
 import {  Marker, Popup, useMapEvents } from 'react-leaflet';
 import { Routes, Route, useNavigate } from "react-router-dom";
+import { useRef } from "react"; // ref flag... it takes note of changes but doesn't actively update/redraw the screen
 
-function ClickHandler( { onMapClick, uiLocked }){
+function ClickHandler( { onMapClick, uiLocked, isDraggingPegman }){
     useMapEvents({
 
       // This takes the latitude and longitude of the click and passing it to "handleMapClick"
       click(e) {
-        if (!uiLocked){
+        if (!uiLocked && !isDraggingPegman.current){
           onMapClick(e.latlng);
         }
       
@@ -177,6 +178,21 @@ function MapScreen() {
   const [locations, setLocations] = useState([]);
 
   const [uiLocked, setUiLocked] = useState(false);
+  
+
+  // --------------------------------- Pegman ------------------------------
+  const pegmanIcon = new L.Icon ({
+    iconUrl: "/Pegman.png",
+    iconSize: [20, 40],
+    iconAnchor: [20, 40],
+  });
+
+  const mapCenter = [43.0401221381528, -71.45140083791992];
+  const [pegmanPosition, setPegmanPosition] = useState(mapCenter);
+  
+  const isDraggingPegman = useRef(false)
+
+  // ------------------------------------------------------------------------
 
   const [currentIcon, setCurrentIcon] = useState();
   const personaIcon = L.icon({
@@ -318,7 +334,7 @@ function MapScreen() {
     
         {/* This is where the map lives */}
         <MapContainer
-          center={[43.0401221381528, -71.45140083791992]} // SNHU coordinates
+          center={mapCenter} // SNHU coordinates
           zoom={16}
           style={{ height: '100%', width: '100%'}}
         >
@@ -331,7 +347,37 @@ function MapScreen() {
 
         />
 
-        <ClickHandler onMapClick={handleMapClick} uiLocked={uiLocked}/>
+        {/* Pegman marker (with coordinate tracking) */}
+        <Marker
+          position={pegmanPosition}
+          icon={pegmanIcon}
+          draggable={true}
+          eventHandlers={{
+            dragstart: () => {
+              isDraggingPegman.current = true; // disables map clicking
+            },
+            dragend: (e) => {
+              const newPos = e.target.getLatLng();
+              const coords = [newPos.lat, newPos.lng];
+
+              setPegmanPosition(coords);
+
+              console.log("Pegman coordinates:", coords);
+
+              // Small timeout prevents click firindg after drag
+              setTimeout(() => {
+                isDraggingPegman.current = false;
+  
+              }, 50);
+            },
+          }}
+        />
+
+        <ClickHandler 
+          onMapClick={handleMapClick} 
+          uiLocked={uiLocked} 
+          isDraggingPegman={isDraggingPegman}
+        />
 
         {locations.map((loc, i) => (
           <Marker key={i} position={loc.latlng} icon={currentIcon || personaIcon}>
