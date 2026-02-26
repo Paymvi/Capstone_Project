@@ -22,16 +22,11 @@ function ClickHandler( { onMapClick, uiLocked, isDraggingPegman }){
     return null;
 }
 
-function SecondScreen() {
+function SecondScreen({ collectedItems, equipped, setEquipped }) {
   const navigate = useNavigate();
 
-  // For selecting loadout (full set of equipped items)
-  const [equipped, setEquipped] = useState({
-    hat: null,
-    body: null,
-    outside: null,
-  });
-
+  // ALL Accessories
+  // 123456
   const ACCESSORIES = [
     { 
       id: "hat_crown",                // crown
@@ -63,7 +58,7 @@ function SecondScreen() {
     
     },
     { 
-      id: "outside_item",             // shield
+      id: "outside_shield",             // shield
       type: "outside", 
       name: "Shield", 
       src: "/Roamie-Shield-2.png",
@@ -77,8 +72,12 @@ function SecondScreen() {
       position: { bottom: "5%", height: "75px", left: "65%"}
     },
     
-
   ];
+
+  // Unlocked Accessories
+  const unlockedAccessories = ACCESSORIES.filter(item =>
+    collectedItems.includes(item.id)
+  );
 
   function equipAccessory(item) {
     setEquipped(prev => ({
@@ -152,7 +151,7 @@ function SecondScreen() {
       </div>
   <div>
     <AccessoriesPanel
-        items={ACCESSORIES}
+        items={unlockedAccessories}
         equipped={equipped}
         onSelect={toggleAccessory} // or equipAccessory
     />
@@ -171,7 +170,7 @@ function SecondScreen() {
   </div>
 )}
 
-function MapScreen() {
+function MapScreen({ collectedItems, setCollectedItems }) {
 
   const navigate = useNavigate();
 
@@ -203,53 +202,84 @@ const [staticLocations, setStaticLocations] = useState([
   {
     id: 1,
     position: [43.03881471145394, -71.45190238952638],
-    title: "Library",
+    title: "Crown",
     description: "Collect your crown at the library!",
     img: "/Roamie-Crown-2.png",
+    accessoryId: "hat_crown",
     radius: 30,   // 30 meters
     collected: false
   },
   {
     id: 2,
     position: [43.039763539565556, -71.45380139350893],
-    title: "Student Center",
+    title: "Flower",
     description: "Flower Power Drop!!!",
     img: "/Roamie-Flower.png",
+    accessoryId: "hat_flower",
     radius: 30,
     collected: false
   },
   {
     id: 3,
     position: [43.038673562216715, -71.45618319511415],
-    title: "Gym",
+    title: "Dumbbell",
     description: "Collect this limited edition dumbbell!",
     img: "/Roamie-Dumbbell-2.png",
+    accessoryId: "outside_dumbbell",
     radius: 30,
-    collected: false
+  },
+  {
+    id: 4,
+    position: [43.03951261124411, -71.45159125328065],
+    title: "Santa Hat",
+    description: "Santa hat drop!!!",
+    img: "/Roamie-SantaHat.png",
+    accessoryId: "hat_santahat",
+    radius: 30,
+
+  },
+  {
+    id: 5,
+    position: [43.04064962199054, -71.4509153366089],
+    title: "Coat",
+    description: "Stay warm and collect this fluffy coat!!!",
+    img: "/Roamie-Coat-2.png",
+    accessoryId: "body_coat",
+    radius: 30,
+  },
+  {
+    id: 6,
+    position: [43.04091622835737, -71.45213842391969],
+    title: "Shield",
+    description: "Collect this Shiny Shield!!!",
+    img: "/Roamie-Shield-2.png",
+    accessoryId: "outside_shield",
+    radius: 30,
   }
 ]);
 
   // This checks to see if you collected an item everytime the map rerenders
   useEffect(() => {
     staticLocations.forEach((loc) => {
-      if (loc.collected) return;
+      
+      // Skip if already collected (using global state)
+      if (collectedItems.includes(loc.accessoryId)) return;
 
       const distance = L.latLng(pegmanPosition)
         .distanceTo(L.latLng(loc.position));
 
       if (distance <= loc.radius) {
-        setMessage("🎉 Congrats, you collected the item!");
-
-        setStaticLocations((prev) =>
-          prev.map((item) =>
-            item.id === loc.id
-              ? { ...item, collected: true }
-              : item
-          )
+        
+        setCollectedItems(prev =>
+          prev.includes(loc.accessoryId)
+            ? prev
+            : [...prev, loc.accessoryId]
         );
+        setMessage(`🎉 You collected the ${loc.title}!!`);
+
       }
     });
-  }, [pegmanPosition]);
+  }, [pegmanPosition, collectedItems]);
 
   useEffect(() => {
     if (!message) return;
@@ -436,7 +466,7 @@ const [staticLocations, setStaticLocations] = useState([
               setTimeout(() => {
                 isDraggingPegman.current = false;
   
-              }, 50);
+              }, 20);
             },
           }}
         />
@@ -449,7 +479,7 @@ const [staticLocations, setStaticLocations] = useState([
 
         {/* Static Markers */}
         {staticLocations
-          .filter((loc) => !loc.collected) // hide collected ones
+          .filter((loc) => !collectedItems.includes(loc.accessoryId)) // hide collected ones (uses global state)
           .map((loc) => (
             <Marker key={loc.id} position={loc.position}>
               <Popup className="custom-popup">
@@ -530,10 +560,45 @@ const [staticLocations, setStaticLocations] = useState([
 }
 
 function App() {
+
+  const [collectedItems, setCollectedItems] = useState([]);
+  // Looks something like: ["hat_crown", "hat_flower"]
+
+  // For selecting loadout (full set of equipped items)
+  const [equipped, setEquipped] = useState({
+    hat: null,
+    body: null,
+    outside: null,
+  });
+
+
   return (
     <Routes>
-      <Route path="/" element={<MapScreen />} />
-      <Route path="/second" element={<SecondScreen />} />
+
+
+      <Route 
+        path="/" 
+        element={
+          <MapScreen 
+            collectedItems={collectedItems}
+            setCollectedItems={setCollectedItems}
+
+          />
+        } 
+      />
+
+      <Route 
+        path="/second" 
+        element={
+          <SecondScreen 
+            collectedItems={collectedItems}
+            equipped={equipped}
+            setEquipped={setEquipped}
+          />
+        } 
+      />
+
+
     </Routes>
   );
 }
