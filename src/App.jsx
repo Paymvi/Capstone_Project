@@ -5,6 +5,7 @@ import { MapContainer, TileLayer } from 'react-leaflet';  // initializes and man
 import 'leaflet/dist/leaflet.css';
 import {  Marker, Popup, useMapEvents } from 'react-leaflet';
 import { Routes, Route, useNavigate } from "react-router-dom";
+import Login from "./pages/Login";
 import { useRef } from "react"; // ref flag... it takes note of changes but doesn't actively update/redraw the screen
 import { useEffect } from 'react';
 
@@ -560,45 +561,47 @@ const [staticLocations, setStaticLocations] = useState([
 }
 
 function App() {
+  const token = localStorage.getItem("token");
 
   const [collectedItems, setCollectedItems] = useState([]);
-  // Looks something like: ["hat_crown", "hat_flower"]
-
-  // For selecting loadout (full set of equipped items)
   const [equipped, setEquipped] = useState({
     hat: null,
     body: null,
     outside: null,
   });
 
-
   return (
     <Routes>
+      <Route path="/login" element={<Login />} />
 
-
-      <Route 
-        path="/" 
+      <Route
+        path="/"
         element={
-          <MapScreen 
-            collectedItems={collectedItems}
-            setCollectedItems={setCollectedItems}
-
-          />
-        } 
+          token ? (
+            <MapScreen
+              collectedItems={collectedItems}
+              setCollectedItems={setCollectedItems}
+            />
+          ) : (
+            <Login />
+          )
+        }
       />
 
-      <Route 
-        path="/second" 
+      <Route
+        path="/second"
         element={
-          <SecondScreen 
-            collectedItems={collectedItems}
-            equipped={equipped}
-            setEquipped={setEquipped}
-          />
-        } 
+          token ? (
+            <SecondScreen
+              collectedItems={collectedItems}
+              equipped={equipped}
+              setEquipped={setEquipped}
+            />
+          ) : (
+            <Login />
+          )
+        }
       />
-
-
     </Routes>
   );
 }
