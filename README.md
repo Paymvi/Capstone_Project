@@ -40,45 +40,45 @@ https://github.com/Paymvi/Capstone_Project.git
 
 ### Client Setup
 
-3. Install dependencies: 
+2. Install dependencies: 
 ```
 npm install
 ```
 
-4. Start the development server: 
+3. Start the development server: 
 ```
 "npm run dev"
 ```
 
-5. By default, the app will run at:
+4. By default, the app will run at:
 ```
 http://localhost:5173
 ```
 
 ### Server Setup
 
-6. Navigate to the backend directory:
+5. Navigate to the backend directory:
 ```
 cd backend
 ```
 
-7. Install backend dependencies:
+6. Install backend dependencies:
 ```
  "npm install"
 ```
 
-8. Start the server: 
+7. Start the server: 
 ```
 node server.js
 ```
 
-9. The backend will run on: 
+8. The backend will run on: 
 ```
 http://localhost:5000
 ```
 
 ### Entering Roamie
-10. Now that both: 
+9. Now that both: 
     * Once both:
 
         * ✅ Client (npm run dev)
