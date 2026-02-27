@@ -4,3 +4,9 @@ Licensed under the MIT License.
 
 animalese.wav licensed under CC BY 4.0
 https://creativecommons.org/licenses/by/4.0/
+
+
+Sound Effects
+Collect sound: Mixkit
+License: Mixkit Sound Effects Free License
+https://mixkit.co/
