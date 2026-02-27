@@ -8,6 +8,8 @@ import { Routes, Route, useNavigate } from "react-router-dom";
 import { useRef } from "react"; // ref flag... it takes note of changes but doesn't actively update/redraw the screen
 import { useEffect } from 'react';
 
+// import Animalese from "./audio/animalese";
+
 
 // Music
 function BackgroundMusic() {
@@ -188,6 +190,18 @@ function SecondScreen({ collectedItems, equipped, setEquipped }) {
     );
   }
 
+
+  // The speak function
+  const speak = (text) => {
+    let engine;
+
+    engine = new Animalese("/animalese.wav", function () {
+      const wave = engine.Animalese(text, false, 1);
+      const audio = new Audio(wave.dataURI);
+      audio.play();
+    });
+  };
+
   return (
 
     <div className="avatar-screen">
@@ -199,9 +213,15 @@ function SecondScreen({ collectedItems, equipped, setEquipped }) {
 
         <h1>Welcome to the Avatar Screen</h1>
 
+
+
         <div className="avatar-container">
 
-          <img src="/Roamie-Dog-2.png" width="230px"></img>
+          <img 
+            src="/Roamie-Dog-2.png" 
+            width="230px"
+            onClick={() => speak("Welcome to Roamie!")}
+          ></img>
 
 
           {/* Accessory */}
