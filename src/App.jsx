@@ -190,9 +190,26 @@ function SecondScreen({ collectedItems, equipped, setEquipped }) {
     );
   }
 
+  // ------------ animalese message ------------------
+
+  const [message, setMessage] = useState(null);
+
+  useEffect(() => {
+    if (!message) return;
+
+    const timer = setTimeout(() => {
+      setMessage(null);
+    }, 1500); // 1.5 seconds
+
+    return () => clearTimeout(timer);
+  }, [message]);
+
 
   // The speak function
   const speak = (text) => {
+
+    setMessage(text);
+
     let engine;
 
     engine = new Animalese("/animalese.wav", function () {
@@ -201,6 +218,8 @@ function SecondScreen({ collectedItems, equipped, setEquipped }) {
       audio.play();
     });
   };
+
+  // ----------------------------------------------------
 
   return (
 
@@ -222,6 +241,12 @@ function SecondScreen({ collectedItems, equipped, setEquipped }) {
             width="230px"
             onClick={() => speak("Welcome to Roamie!")}
           ></img>
+
+          {message && (
+            <div className="avatar-message">
+              {message}
+            </div>
+          )}
 
 
           {/* Accessory */}
