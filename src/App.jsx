@@ -161,11 +161,19 @@ function SecondScreen({ collectedItems, equipped, setEquipped }) {
     }));
   }
 
+  const playClickSound = () => {
+    const audio = new Audio("/jingle-2.wav");
+    audio.volume = 0.5;
+    audio.play();
+  };
+
   function toggleAccessory(item) {
     setEquipped(prev => ({
       ...prev,
       [item.type]: prev[item.type]?.id === item.id ? null : item
     }));
+
+    playClickSound();
   }
 
   function AccessoriesPanel({ items, equipped, onSelect }) {
@@ -410,6 +418,17 @@ const [staticLocations, setStaticLocations] = useState([
   }, [message]);
 
 
+  // Audio for when you collect an item
+  useEffect(() => {
+    if (!message) return;
+
+    const audio = new Audio("/jingle-1.wav");
+    audio.volume = 0.6;
+    audio.play();
+
+  }, [message]);
+
+
   const [currentIcon, setCurrentIcon] = useState();
   const personaIcon = L.icon({
     iconUrl: '/pin.png',
@@ -550,7 +569,7 @@ const [staticLocations, setStaticLocations] = useState([
     
         {/* This is where the map lives */}
         <MapContainer
-          center={mapCenter} // SNHU coordinates
+          center={mapCenter} // coordinates
           zoom={16}
           style={{ height: '100%', width: '100%'}}
         >
@@ -665,6 +684,7 @@ const [staticLocations, setStaticLocations] = useState([
         {message && (
           <div className="proximity-alert">
             {message}
+
           </div>
         )}
 
