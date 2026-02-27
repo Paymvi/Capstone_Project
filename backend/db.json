@@ -1,5 +1,5 @@
 {
-  "nextUserId": 7,
+  "nextUserId": 8,
   "users": [
     {
       "id": 1,
@@ -72,6 +72,20 @@
         "hat": null,
         "body": null,
         "outside": null
+      }
+    },
+    {
+      "id": 7,
+      "username": "ishmael324",
+      "markers": [],
+      "collectedItems": [
+        "body_coat",
+        "outside_shield"
+      ],
+      "equipped": {
+        "hat": null,
+        "body": "body_coat",
+        "outside": "outside_shield"
       }
     }
   ]
