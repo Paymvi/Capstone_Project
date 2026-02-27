@@ -1,12 +1,15 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from "react";
 import './App.css'
 import L from 'leaflet';
 import { MapContainer, TileLayer } from 'react-leaflet';  // initializes and manages the Leaflet map 
 import 'leaflet/dist/leaflet.css';
 import {  Marker, Popup, useMapEvents } from 'react-leaflet';
 import { Routes, Route, useNavigate } from "react-router-dom";
-import { useRef } from "react"; // ref flag... it takes note of changes but doesn't actively update/redraw the screen
-import { useEffect } from 'react';
+
+import Login from "./Login";
+import { apiGetState, apiAddMarker, apiSetEquipped } from "./api";
+
+import { apiSetCollected } from "./api";
 
 // import Animalese from "./audio/animalese";
 
@@ -97,7 +100,7 @@ function ClickHandler( { onMapClick, uiLocked, isDraggingPegman }){
     return null;
 }
 
-function SecondScreen({ collectedItems, equipped, setEquipped }) {
+function SecondScreen({ userId, collectedItems, equipped, setEquipped }) {
   const navigate = useNavigate();
 
   // ALL Accessories
@@ -149,6 +152,7 @@ function SecondScreen({ collectedItems, equipped, setEquipped }) {
     
   ];
 
+
   // Unlocked Accessories
   const unlockedAccessories = ACCESSORIES.filter(item =>
     collectedItems.includes(item.id)
@@ -167,11 +171,19 @@ function SecondScreen({ collectedItems, equipped, setEquipped }) {
     audio.play();
   };
 
-  function toggleAccessory(item) {
-    setEquipped(prev => ({
-      ...prev,
-      [item.type]: prev[item.type]?.id === item.id ? null : item
-    }));
+  async function toggleAccessory(item) {
+    const newEquipped = {
+      ...equipped,
+      [item.type]: equipped[item.type] === item.id ? null : item.id
+    };
+
+    setEquipped(newEquipped);
+
+  await apiSetEquipped(userId, {
+    hat: newEquipped.hat,
+    body: newEquipped.body,
+    outside: newEquipped.outside
+  });
 
     playClickSound();
   }
@@ -180,7 +192,8 @@ function SecondScreen({ collectedItems, equipped, setEquipped }) {
     return (
       <div className="accessory-panel">
         {items.map(item => {
-          const isEquipped = equipped[item.type]?.id === item.id;
+          // const isEquipped = equipped[item.type]?.id === item.id;
+          const isEquipped = equipped[item.type] === item.id;
 
           return (
             <button
@@ -260,15 +273,27 @@ function SecondScreen({ collectedItems, equipped, setEquipped }) {
           {/* Accessory */}
 
           {equipped.hat && (
-            <img className="accessory accessory-hat" src={equipped.hat.src} alt={equipped.hat.name} style={equipped.hat.position} />
+            <img
+              className="accessory accessory-hat"
+              src={ACCESSORIES.find(a => a.id === equipped.hat)?.src}
+              style={ACCESSORIES.find(a => a.id === equipped.hat)?.position}
+            />
           )}
 
           {equipped.body && (
-            <img className="accessory accessory-body" src={equipped.body.src} alt={equipped.body.name} style={equipped.body.position} />
+            <img
+              className="accessory accessory-body"
+              src={ACCESSORIES.find(a => a.id === equipped.body)?.src}
+              style={ACCESSORIES.find(a => a.id === equipped.body)?.position}
+            />
           )}
 
           {equipped.outside && (
-            <img className="accessory accessory-outside" src={equipped.outside.src} alt={equipped.outside.name} style={equipped.outside.position}/>
+            <img
+              className="accessory accessory-outside"
+              src={ACCESSORIES.find(a => a.id === equipped.outside)?.src}
+              style={ACCESSORIES.find(a => a.id === equipped.outside)?.position}
+            />
           )}
 
 
@@ -296,7 +321,7 @@ function SecondScreen({ collectedItems, equipped, setEquipped }) {
   </div>
 )}
 
-function MapScreen({ collectedItems, setCollectedItems }) {
+function MapScreen({ userId, collectedItems, setCollectedItems }) {
 
   const navigate = useNavigate();
 
@@ -394,18 +419,22 @@ const [staticLocations, setStaticLocations] = useState([
       const distance = L.latLng(pegmanPosition)
         .distanceTo(L.latLng(loc.position));
 
-      if (distance <= loc.radius) {
-        
-        setCollectedItems(prev =>
-          prev.includes(loc.accessoryId)
-            ? prev
-            : [...prev, loc.accessoryId]
-        );
-        setMessage(`🎉 You've collected the ${loc.title}!!`);
+        if (distance <= loc.radius) {
+          setCollectedItems(prev => {
+            if (prev.includes(loc.accessoryId)) return prev;
 
-      }
+            const updated = [...prev, loc.accessoryId];
+
+            // Save to backend
+            apiSetCollected(userId, updated);
+
+            return updated;
+          });
+
+          setMessage(`🎉 You've collected the ${loc.title}!!`);
+        }
     });
-  }, [pegmanPosition, collectedItems]);
+  }, [pegmanPosition, collectedItems, userId]);
 
   useEffect(() => {
     if (!message) return;
@@ -485,6 +514,8 @@ const [staticLocations, setStaticLocations] = useState([
 
     // Add this information immediately to the map
     setLocations((prev) => [...prev, newPlace]);
+
+    await apiAddMarker(userId, latlng.lat, latlng.lng);
 
     // Check Wi-Fi before making API calls (is there is none, have an error message)
     if (!navigator.onLine) {
@@ -709,16 +740,60 @@ function App() {
     outside: null,
   });
 
+  const [userId, setUserId] = useState(null);
 
-  return (
-    <>
+  // Auto-login if saved
+  useEffect(() => {
+    const saved = localStorage.getItem("userId");
+    if (saved) {
+      setUserId(Number(saved));
+    }
+  }, []);
+
+  // When user logs in, load their saved state
+  useEffect(() => {
+    if (!userId) return;
+
+    apiGetState(userId)
+      .then((data) => {
+        setCollectedItems(data.collectedItems || []);
+        setEquipped(data.equipped || { hat: null, body: null, outside: null });
+      })
+      .catch((err) => {
+        console.log("User not found, forcing login...");
+        localStorage.removeItem("userId");
+        setUserId(null);
+      });
+
+  }, [userId]);
+
+  if (!userId) {
+    return <Login onLoggedIn={(id) => setUserId(id)} />;
+  }
+
+return (
+  <>
     <BackgroundMusic />
-      <Routes>
+
+    <div style={{ position: "absolute", top: 50, right: 20, zIndex: 1000 }}>
+      <button
+        onClick={() => {
+          localStorage.removeItem("userId");
+          setUserId(null);
+        }}
+        style={{ padding: 8 }}
+      >
+        Logout
+      </button>
+    </div>
+
+    <Routes>
 
         <Route 
           path="/" 
           element={
             <MapScreen 
+              userId={userId}
               collectedItems={collectedItems}
               setCollectedItems={setCollectedItems}
 
@@ -730,6 +805,7 @@ function App() {
           path="/second" 
           element={
             <SecondScreen 
+              userId={userId}
               collectedItems={collectedItems}
               equipped={equipped}
               setEquipped={setEquipped}

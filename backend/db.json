@@ -1,0 +1,78 @@
+{
+  "nextUserId": 7,
+  "users": [
+    {
+      "id": 1,
+      "username": "123",
+      "markers": [],
+      "collectedItems": [],
+      "equipped": {
+        "hat": null,
+        "body": null,
+        "outside": null
+      }
+    },
+    {
+      "id": 2,
+      "username": "1234",
+      "markers": [],
+      "collectedItems": [],
+      "equipped": {
+        "hat": null,
+        "body": null,
+        "outside": null
+      }
+    },
+    {
+      "id": 3,
+      "username": "chelsea",
+      "markers": [],
+      "collectedItems": [],
+      "equipped": {
+        "hat": null,
+        "body": null,
+        "outside": null
+      }
+    },
+    {
+      "id": 4,
+      "username": "12345",
+      "markers": [],
+      "collectedItems": [
+        "hat_flower",
+        "hat_santahat",
+        "outside_shield"
+      ],
+      "equipped": {
+        "hat": "hat_santahat",
+        "body": null,
+        "outside": "outside_shield"
+      }
+    },
+    {
+      "id": 5,
+      "username": "chelsea2",
+      "markers": [],
+      "collectedItems": [
+        "body_coat",
+        "hat_flower"
+      ],
+      "equipped": {
+        "hat": "hat_flower",
+        "body": "body_coat",
+        "outside": null
+      }
+    },
+    {
+      "id": 6,
+      "username": "000",
+      "markers": [],
+      "collectedItems": [],
+      "equipped": {
+        "hat": null,
+        "body": null,
+        "outside": null
+      }
+    }
+  ]
+}
