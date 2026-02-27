@@ -51,3 +51,10 @@ How to rebase:
 
     If you mess up:
         git rebase --abort
+
+
+Renaming a branch
+    git branch (make sure you are in the old branch)
+    git branch -m new-branch-name
+    git push origin --delete old-branch
+    git push

@@ -538,3 +538,21 @@ button.delete:hover {
   70% { opacity: 1; }
   100% { opacity: 0; }
 }
+
+
+/* Message from the avatar */
+.avatar-message {
+  position: absolute;
+  bottom: 220px;
+  left: 45%;
+  transform: translateX(-50%);
+
+  background: white;
+  /* box-shadow: 0 4px 10px rgba(0,0,0,0.2); */
+  padding: 10px 20px;
+  border-radius: 25px;
+  border: 2px solid #ddd;
+  font-weight: bold;
+  z-index: 10;
+  white-space: nowrap;
+}
