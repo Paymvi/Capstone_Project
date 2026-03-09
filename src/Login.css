@@ -1,0 +1,75 @@
+.login-container {
+  display: flex;
+  height: 100vh;
+  font-family: sans-serif;
+}
+
+
+/* LEFT PANEL */
+
+.login-left {
+  flex: 1;
+  background: linear-gradient(135deg,#2b5cff,#0d1f63);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.left-content {
+  width: 70%;
+}
+
+.logo {
+  font-size: 42px;
+  margin-bottom: 20px;
+}
+
+.left-content h2 {
+  font-size: 30px;
+}
+
+.left-content p {
+  opacity: 0.85;
+  line-height: 1.6;
+}
+
+
+/* RIGHT PANEL */
+
+.login-right {
+  flex: 1;
+  background: #f7f7f7;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-card {
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.login-card input {
+  padding: 12px;
+  border: none;
+  border-bottom: 1px solid #ccc;
+  background: transparent;
+}
+
+.login-btn {
+  background: black;
+  color: white;
+  padding: 12px;
+  border-radius: 6px;
+  border: none;
+}
+
+.google-btn {
+  background: white;
+  border: 1px solid #ddd;
+  padding: 12px;
+  border-radius: 6px;
+}

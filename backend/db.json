@@ -1,5 +1,5 @@
 {
-  "nextUserId": 8,
+  "nextUserId": 9,
   "users": [
     {
       "id": 1,
@@ -55,12 +55,13 @@
       "markers": [],
       "collectedItems": [
         "body_coat",
-        "hat_flower"
+        "hat_flower",
+        "outside_shield"
       ],
       "equipped": {
         "hat": "hat_flower",
         "body": "body_coat",
-        "outside": null
+        "outside": "outside_shield"
       }
     },
     {
@@ -85,6 +86,20 @@
       "equipped": {
         "hat": null,
         "body": "body_coat",
+        "outside": "outside_shield"
+      }
+    },
+    {
+      "id": 8,
+      "username": "ish",
+      "markers": [],
+      "collectedItems": [
+        "body_coat",
+        "outside_shield"
+      ],
+      "equipped": {
+        "hat": null,
+        "body": null,
         "outside": "outside_shield"
       }
     }

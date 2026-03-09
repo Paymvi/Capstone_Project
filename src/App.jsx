@@ -581,8 +581,6 @@ const [staticLocations, setStaticLocations] = useState([
     setUiLocked(false); // unlock the map
   };
 
-
-
   return (
     
 
@@ -747,6 +745,17 @@ function App() {
       setUserId(Number(saved));
     }
   }, []);
+
+  // Verify token
+  useEffect(() => {
+    if (!token) return;
+
+    fetch("http://localhost:5000/me", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+}, []);
 
   // When user logs in, load their saved state
   useEffect(() => {

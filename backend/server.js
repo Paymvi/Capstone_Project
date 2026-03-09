@@ -1,7 +1,10 @@
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
+const authMiddleware = require("./middleware/authMiddleware");
 
 const app = express();
 app.use(cors());
@@ -159,13 +162,8 @@ app.put("/collected", (req, res) => {
   res.json({ message: "Collected items updated" });
 });
 
-app.listen(5000, () => {
-  console.log("Backend running on http://localhost:5000");
-});require("dotenv").config();
 console.log("DATABASE_URL:", process.env.DATABASE_URL);
 
-const express = require("express");
-const cors = require("cors")
 const pool = require("./db");
 
 // Google Auth created routes
@@ -174,14 +172,10 @@ const jwt = require("jsonwebtoken");
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.use(cors());
-app.use(express.json());
+const PORT = process.env.PORT || 5000;
 
 app.get("/", (req, res) => {
-    res.send("Roamie is running on port 3000 🔥");
+    res.send("Roamie is running on port 5000 🔥");
 });
 
 // Creates a new user account 
@@ -249,17 +243,49 @@ app.post("/auth/google", async(req, res) => {
 
         let user;
 
-        if (result.rows.length === 0){
-            // Create user
-            const newUser = await pool.query(
-                "INSERT INTO users (google_sub, email, name) VALUES ($1, $2, $3) RETURNING *",
-                [sub, email, name]
-            );
-
-            user = newUser.rows[0];
+        if (result.rows.length > 0){
+            user = result.rows[0];
         }
         else{
-            user = result.rows[0];
+            result = await pool.query(
+                "SELECT * FROM users WHERE email = $1",
+                [email]
+            );
+            
+            if (result.rows.length > 0){
+                const updated = await pool.query(
+                    `
+                    UPDATE users
+                    SET google_sub = $1, name = COALESCE(name, $2)
+                    WHERE email = $3
+                    RETURNING *
+                    `,
+                    [sub, name, email]
+                );
+                
+                user = updated.rows[0];
+            }
+            else{
+                const newUser = await pool.query(
+                    `
+                    INSERT INTO users (google_sub, email, name) 
+                    VALUES ($1, $2, $3) 
+                    RETURNING *
+                    `,
+                    [sub, email, name]
+                );
+
+                user = newUser.rows[0];
+
+                // Create equipment row upon user creation
+                await pool.query(
+                    `
+                    INSERT INTO user_equipment (user_id)
+                    VALUES ($1)
+                    `,
+                    [user.id]
+                );
+            }
         }
 
         // Issue your own JWT
@@ -276,7 +302,135 @@ app.post("/auth/google", async(req, res) => {
     }
     catch(err){
         console.error(err);
-        res.status(401).json({error: "Invalid Googl token"});
+        res.status(401).json({error: "Invalid Google token"});
+    }
+});
+
+// Ensure users with a valid JWT token can access the main app
+app.get("/me", (req, res) => {
+  try {
+
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+      return res.status(401).json({ error: "Missing token" });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    if (!token) {
+      return res.status(401).json({ error: "Invalid token" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    res.json(decoded);
+
+  } catch (err) {
+    console.error("JWT error:", err);
+    res.status(401).json({ error: "Invalid token" });
+  }
+});
+
+// Load player state
+app.get("/me/state", async (req, res) => {
+    const userId = req.user.userId;
+    
+    try{
+        const items = await pool.query(
+            `SELECT item_id 
+            FROM user_user_inventory
+            WHERE user_id = $1`,
+            [userId]
+        );
+
+        const equipment = await pool.query(
+            `
+            SELECT hat_item_id, body_id, outside_item_id 
+            FROM user_equipment
+            WHERE user_id = $1`,
+            [userId]
+        );
+
+        const markers = await pool.query(
+            `SELECT latitude, longitude 
+            FROM markers
+            WHERE user_id = $1
+            `,
+            [userId]
+        );
+
+        res.json({
+            collectedItems: items.rows.map(r => r.item_id),
+            equipped: equipment.rows[0] || {},
+            markers: markers.rows
+        });
+    }
+    catch (err){
+        res.status(500).json({error: err.message});
+    }
+});
+
+// Collect Item
+app.post("/items/collect", authMiddleware, async (req, res) => {
+    const userId = req.user.userId;
+    const {itemId} = req.body;
+
+    try{
+        await pool.query(
+            `
+            INSERT INTO user_inventory (user_id, item_id)
+            VALUES ($1, $2)
+            ON CONFLICT (user_id, item_id) DO NOTHING
+            `,
+            [userId, itemId]
+        );
+    }
+    catch (err){
+        res.status(500).json({error: err.message})
+    }
+});
+
+// Equip Item 
+app.put("/equip", authMiddleware, async (req, res) => {
+    const userId = req.user.userId;
+    const {hat, body, outside} = req.body;
+
+    try {
+        await pool.query(
+            `
+            INSERT INTO user_equipment (user_id, hat_item_id, body_item_id, outside_item_id)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (user_id)
+            DO UPDATE SET
+            hat_item_id = EXCLUDED.hat_item_id,
+            body_item_id = EXCLUDED.body_item_id,
+            outside_item_id = EXCLUDED.outside_item_id
+            `,
+            [userId, hat, body, outside]
+        );
+
+        req.json({success: true})
+    }
+    catch (err){
+        res.status(500).json({error: err.message})
+    }
+});
+
+// Save Marker
+app.post("/markers", authMiddleware, async (req, res) => {
+    const userId = req.user.userId;
+    const {latitude, longitude} = req.body;
+
+    try{
+        `
+        INSERT INTO markers (user_id, latitude, longitude)
+        VALUES ($1, $2, $3)
+        `,
+        [userId, latitude, longitude]
+    }
+    catch (err){
+        res.status(500).json({error: err.message})
     }
 });
 
