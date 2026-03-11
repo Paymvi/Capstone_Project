@@ -58,3 +58,13 @@ Renaming a branch
     git branch -m new-branch-name
     git push origin --delete old-branch
     git push
+
+
+
+export default
+import Thing from "./file"
+- Exports 1 main thing
+
+export function Thing
+import { Thing } from "./file"
+- Export many functions or variables
