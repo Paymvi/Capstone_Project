@@ -321,12 +321,9 @@ function SecondScreen({ userId, collectedItems, equipped, setEquipped }) {
   </div>
 )}
 
-function MapScreen({ userId, collectedItems, setCollectedItems }) {
+function MapScreen({ userId, collectedItems, setCollectedItems, markers, setMarkers }) {
 
   const navigate = useNavigate();
-
-  // Keeps track of saved locations
-  const [locations, setLocations] = useState([]);
 
   const [uiLocked, setUiLocked] = useState(false);
 
@@ -426,7 +423,7 @@ const [staticLocations, setStaticLocations] = useState([
             const updated = [...prev, loc.accessoryId];
 
             // Save to backend
-            apiSetCollected(userId, updated);
+            apiSetCollected(loc.accessoryId);
 
             return updated;
           });
@@ -494,6 +491,11 @@ const [staticLocations, setStaticLocations] = useState([
     // Stops it from marking up spot after clicking "done"
     // if (isDone) return;
 
+    // Check Wi-Fi before making API calls (if there is none, have an error message)
+    if (!navigator.onLine) {
+      setMessage("📡 No internet connection");
+      return;
+    }
 
     const info = prompt("Name this place:");
     if (!info) return;
@@ -501,38 +503,44 @@ const [staticLocations, setStaticLocations] = useState([
     // Get the main/basic info fast
     const basicInfo = await getHumanReadableInfo(latlng.lat, latlng.lng);
 
-    // Make temporary maker
-    const newPlace = {
-      id: Date.now(),
-      latlng,
-      info,
-      locationInfo: basicInfo,
-      // weather: null,
-      // wiki: null,
-      // loading: true
-    }
+    // // Make temporary maker
+    // const newPlace = {
+    //   id: Date.now(),
+    //   latlng,
+    //   info,
+    //   locationInfo: basicInfo,
+    //   // weather: null,
+    //   // wiki: null,
+    //   // loading: true
+    // }
+
+    await apiAddMarker(latlng.lat, latlng.lng);
 
     // Add this information immediately to the map
-    setLocations((prev) => [...prev, newPlace]);
+    setMarkers((prev) => [
+      ...prev,
+      {
+        latlng: [latlng.lat, latlng.lng]
+      }
+    ]);
 
-    await apiAddMarker(userId, latlng.lat, latlng.lng);
 
-    // Check Wi-Fi before making API calls (is there is none, have an error message)
-    if (!navigator.onLine) {
-      setLocations((prev) =>
-        prev.map((loc) =>
-          loc.id === newPlace.id
-            ? {
-                ...loc,
-                // loading: false,
-                // Note: notice how there is a new variable that stores error messages
-                error: "Cannot retrieve information... \ncheck your Wi-Fi connection.",
-              }
-            : loc
-        )
-      );
-      return; // stop here, don’t call APIs
-    }
+    // Check Wi-Fi before making API calls (if there is none, have an error message)
+    // if (!navigator.onLine) {
+    //   setLocations((prev) =>
+    //     prev.map((loc) =>
+    //       loc.id === newPlace.id
+    //         ? {
+    //             ...loc,
+    //             // loading: false,
+    //             // Note: notice how there is a new variable that stores error messages
+    //             error: "Cannot retrieve information... \ncheck your Wi-Fi connection.",
+    //           }
+    //         : loc
+    //     )
+    //   );
+    //   return; // stop here, don’t call APIs
+    // }
   
     // Fetch the slower stuff in the background
     // try {
@@ -580,8 +588,6 @@ const [staticLocations, setStaticLocations] = useState([
     setLocations(prev => prev.filter(loc => loc.id !== id))
     setUiLocked(false); // unlock the map
   };
-
-
 
   return (
     
@@ -684,17 +690,16 @@ const [staticLocations, setStaticLocations] = useState([
         ))}
 
         {/* User Added Markers */}
-        {locations.map((loc, i) => (
+        {markers.map((loc, i) => (
           <Marker key={i} position={loc.latlng} icon={currentIcon || personaIcon}>
             
             <Popup className="custom-popup">
               <div className="popup-content">
-                <div className="title">{loc.info}</div>
+                <div className="title">{loc.info || "Saved Location"}</div>
                 
                 <div className="section">
                   <div className="info">
-                    <span><span className="label">Location:</span> {loc.locationInfo?.city}, {loc.locationInfo?.state}</span>
-                    <span><span className="label">Country:</span> {loc.locationInfo?.country}</span>
+                    <span>Custom location marker</span>
                   </div>
                 </div>
 
@@ -729,11 +734,9 @@ const [staticLocations, setStaticLocations] = useState([
 }
 
 function App() {
+  const token = localStorage.getItem("token");
 
   const [collectedItems, setCollectedItems] = useState([]);
-  // Looks something like: ["hat_crown", "hat_flower"]
-
-  // For selecting loadout (full set of equipped items)
   const [equipped, setEquipped] = useState({
     hat: null,
     body: null,
@@ -741,6 +744,8 @@ function App() {
   });
 
   const [userId, setUserId] = useState(null);
+
+  const [markers, setMarkers] = useState([]);
 
   // Auto-login if saved
   useEffect(() => {
@@ -750,14 +755,33 @@ function App() {
     }
   }, []);
 
+  // Verify token
+  useEffect(() => {
+    if (!token) return;
+
+    fetch("http://localhost:5000/me", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+}, []);
+
   // When user logs in, load their saved state
   useEffect(() => {
     if (!userId) return;
 
-    apiGetState(userId)
+    apiGetState()
       .then((data) => {
         setCollectedItems(data.collectedItems || []);
         setEquipped(data.equipped || { hat: null, body: null, outside: null });
+
+        if (data.markers) {
+          setMarkers(
+            data.markers.map(m => ({
+              latlng: [m.latitude, m.longitude]
+            }))
+          );
+        }
       })
       .catch((err) => {
         console.log("User not found, forcing login...");
@@ -796,7 +820,8 @@ return (
               userId={userId}
               collectedItems={collectedItems}
               setCollectedItems={setCollectedItems}
-
+              markers={markers}
+              setMarkers={setMarkers}
             />
           } 
         />

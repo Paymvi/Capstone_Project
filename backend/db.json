@@ -1,5 +1,5 @@
 {
-  "nextUserId": 8,
+  "nextUserId": 12,
   "users": [
     {
       "id": 1,
@@ -41,11 +41,14 @@
       "collectedItems": [
         "hat_flower",
         "hat_santahat",
-        "outside_shield"
+        "outside_shield",
+        "hat_crown",
+        "outside_dumbbell",
+        "body_coat"
       ],
       "equipped": {
-        "hat": "hat_santahat",
-        "body": null,
+        "hat": "hat_flower",
+        "body": "body_coat",
         "outside": "outside_shield"
       }
     },
@@ -55,12 +58,13 @@
       "markers": [],
       "collectedItems": [
         "body_coat",
-        "hat_flower"
+        "hat_flower",
+        "outside_shield"
       ],
       "equipped": {
         "hat": "hat_flower",
         "body": "body_coat",
-        "outside": null
+        "outside": "outside_shield"
       }
     },
     {
@@ -86,6 +90,63 @@
         "hat": null,
         "body": "body_coat",
         "outside": "outside_shield"
+      }
+    },
+    {
+      "id": 8,
+      "username": "ish",
+      "markers": [],
+      "collectedItems": [
+        "body_coat",
+        "outside_shield"
+      ],
+      "equipped": {
+        "hat": null,
+        "body": null,
+        "outside": "outside_shield"
+      }
+    },
+    {
+      "id": 9,
+      "username": "dog_guy12",
+      "markers": [],
+      "collectedItems": [
+        "outside_shield",
+        "hat_crown"
+      ],
+      "equipped": {
+        "hat": "hat_crown",
+        "body": null,
+        "outside": "outside_shield"
+      }
+    },
+    {
+      "id": 10,
+      "username": "doggi123",
+      "markers": [],
+      "collectedItems": [
+        "hat_crown",
+        "outside_dumbbell"
+      ],
+      "equipped": {
+        "hat": "hat_crown",
+        "body": null,
+        "outside": "outside_dumbbell"
+      }
+    },
+    {
+      "id": 11,
+      "username": "doggie123",
+      "markers": [],
+      "collectedItems": [
+        "hat_santahat",
+        "hat_flower",
+        "hat_crown"
+      ],
+      "equipped": {
+        "hat": "hat_crown",
+        "body": null,
+        "outside": null
       }
     }
   ]
