@@ -1,5 +1,5 @@
+import { apiPasswordLogin, apiRegister } from "./api";
 import { useState } from "react";
-import { apiLogin } from "./api";
 import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import "./Login.css";
@@ -7,14 +7,38 @@ import "./Login.css";
 export default function Login({ onLoggedIn }) {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
   async function handleLogin() {
-    if (!username.trim()) return;
+    try {
 
-    const user = await apiLogin(username);
+      const data = await apiPasswordLogin(username, password);
 
-    localStorage.setItem("userId", String(user.id));
-    onLoggedIn(user.id);
+      localStorage.setItem("token", data.token);
+
+      onLoggedIn(data.user.id);
+
+      navigate("/");
+
+    }
+    catch (err){
+      console.error("Login error", err);
+    }
+  }
+
+  async function handleRegister(){
+    try { 
+      const data = await apiRegister(username, password );
+
+      alert("🎉 Account created successfully! 🎉")
+
+      localStorage.setItem("token", data.token);
+
+      navigate("/");
+    }
+    catch (err){
+      console.error("Register error:", err);
+    }
   }
 
   const handleSuccess = async (credentialResponse) => {
@@ -72,11 +96,25 @@ export default function Login({ onLoggedIn }) {
               style={{ padding: 8 }}
             />
 
+            <input 
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+            />
+
             <button className="login-btn"
               onClick={handleLogin}
               style={{ marginLeft: 10, padding: 8 }}
             >
               Login
+            </button>
+
+            <button className="login-btn"
+              onClick={handleRegister}
+              style={{ marginLeft: 10, padding: 8 }}
+            >
+              Register
             </button>
 
             <p>Type any name. It will persist!</p>

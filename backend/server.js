@@ -203,7 +203,7 @@ app.post("/users", async(req, res) => {
 
         if (err.code === "23505") {
             return res.status(409).json({
-                error: "Email already exists!"
+                error: "Username already exists!"
             });
         }
 
