@@ -15,6 +15,8 @@ import { apiSetCollected } from "./api";
 
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
+const DEV_MODE = true;
+
 
 // Music
 function BackgroundMusic() {
@@ -181,11 +183,12 @@ function SecondScreen({ userId, collectedItems, equipped, setEquipped }) {
 
     setEquipped(newEquipped);
 
-  await apiSetEquipped(userId, {
-    hat: newEquipped.hat,
-    body: newEquipped.body,
-    outside: newEquipped.outside
-  });
+  if (!DEV_MODE) {
+    await apiSetEquipped(userId, {
+      hat: newEquipped.hat,
+      body: newEquipped.body,
+      outside: newEquipped.outside
+  }); }
 
     playClickSound();
   }
@@ -425,7 +428,9 @@ const [staticLocations, setStaticLocations] = useState([
             const updated = [...prev, loc.accessoryId];
 
             // Save to backend
-            apiSetCollected(loc.accessoryId);
+            if (!DEV_MODE) {
+              apiSetCollected(loc.accessoryId);
+            }
 
             return updated;
           });
@@ -747,6 +752,13 @@ function App() {
 
   const [userId, setUserId] = useState(null);
 
+  useEffect(() => {
+    if (DEV_MODE) {
+      setUserId(1);
+      localStorage.setItem("userId", 1);
+    }
+  }, []);
+
   const [markers, setMarkers] = useState([]);
 
   // Auto-login if saved
@@ -770,10 +782,28 @@ function App() {
 
   // When user logs in, load their saved state
   useEffect(() => {
-    if (!userId) return;
+  if (!userId) return;
 
-    apiGetState()
-      .then((data) => {
+  if (DEV_MODE) {
+    console.log("DEV MODE: skipping backend state load");
+
+    setCollectedItems([
+      "hat_crown",
+      "hat_flower",
+      "body_coat"
+    ]);
+
+    setEquipped({
+      hat: "hat_crown",
+      body: "body_coat",
+      outside: null
+    });
+
+    return;
+  }
+
+  apiGetState()
+    .then((data) => {
         setCollectedItems(data.collectedItems || []);
         setEquipped(data.equipped || { hat: null, body: null, outside: null });
 
@@ -793,7 +823,7 @@ function App() {
 
   }, [userId]);
 
-  if (!userId) {
+  if (!userId && !DEV_MODE) {
     return <Login onLoggedIn={(id) => setUserId(id)} />;
   }
 
