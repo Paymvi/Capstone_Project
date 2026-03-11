@@ -13,6 +13,8 @@ import { apiSetCollected } from "./api";
 
 // import Animalese from "./audio/animalese";
 
+import { GoogleOAuthProvider } from "@react-oauth/google";
+
 
 // Music
 function BackgroundMusic() {
@@ -759,7 +761,7 @@ function App() {
   useEffect(() => {
     if (!token) return;
 
-    fetch("http://localhost:5000/me", {
+    fetch("http://localhost:3000/me", {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -795,53 +797,58 @@ function App() {
     return <Login onLoggedIn={(id) => setUserId(id)} />;
   }
 
+  console.log("CLIENT ID:", import.meta.env.VITE_GOOGLE_CLIENT_ID);
+
 return (
-  <>
-    <BackgroundMusic />
+  <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+    
+    {!userId ? (
+      <Login onLoggedIn={(id) => setUserId(id)} />
+    ) : (
+      <>
+        <BackgroundMusic />
 
-    <div style={{ position: "absolute", top: 50, right: 20, zIndex: 1000 }}>
-      <button
-        onClick={() => {
-          localStorage.removeItem("userId");
-          setUserId(null);
-        }}
-        style={{ padding: 8 }}
-      >
-        Logout
-      </button>
-    </div>
+        <div style={{ position: "absolute", top: 50, right: 20, zIndex: 1000 }}>
+          <button
+            onClick={() => {
+              localStorage.removeItem("userId");
+              setUserId(null);
+            }}
+            style={{ padding: 8 }}
+          >
+            Logout
+          </button>
+        </div>
 
-    <Routes>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <MapScreen
+                userId={userId}
+                collectedItems={collectedItems}
+                setCollectedItems={setCollectedItems}
+                markers={markers}
+                setMarkers={setMarkers}
+              />
+            }
+          />
 
-        <Route 
-          path="/" 
-          element={
-            <MapScreen 
-              userId={userId}
-              collectedItems={collectedItems}
-              setCollectedItems={setCollectedItems}
-              markers={markers}
-              setMarkers={setMarkers}
-            />
-          } 
-        />
-
-        <Route 
-          path="/second" 
-          element={
-            <SecondScreen 
-              userId={userId}
-              collectedItems={collectedItems}
-              equipped={equipped}
-              setEquipped={setEquipped}
-            />
-          } 
-        />
-
-
-      </Routes>
-    </>
-  );
+          <Route
+            path="/second"
+            element={
+              <SecondScreen
+                userId={userId}
+                collectedItems={collectedItems}
+                equipped={equipped}
+                setEquipped={setEquipped}
+              />
+            }
+          />
+        </Routes>
+      </>
+    )}
+  </GoogleOAuthProvider>
+);
 }
-
-export default App
+export default App 

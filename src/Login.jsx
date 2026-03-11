@@ -1,4 +1,4 @@
-import { apiPasswordLogin, apiRegister } from "./api";
+import { apiPasswordLogin, apiRegister, apiGoogleLogin } from "./api";
 import { useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
@@ -43,29 +43,16 @@ export default function Login({ onLoggedIn }) {
 
   const handleSuccess = async (credentialResponse) => {
     try {
+
       const token = credentialResponse.credential;
 
-      const res = await fetch("http://localhost:5000/auth/google", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ token }),
-      });
+      const data = await apiGoogleLogin(token);
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Login failed");
-      }
-
-      // Save JWT
       localStorage.setItem("token", data.token);
       localStorage.setItem("userId", data.user.id);
 
       onLoggedIn(data.user.id);
 
-      // Redirect to main app
       navigate("/");
 
     } catch (err) {
