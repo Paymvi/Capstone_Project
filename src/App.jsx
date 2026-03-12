@@ -1,24 +1,94 @@
 import { useState, useEffect, useRef } from "react";
 import './App.css'
 import 'leaflet/dist/leaflet.css';
-import { Routes, Route, useNavigate } from "react-router-dom";
+import { Routes, Route, useNavigate, NavLink } from "react-router-dom";
 
 import { apiGetState, apiAddMarker, apiSetEquipped } from "./api";
 
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
-const DEV_MODE = false;
+const DEV_MODE = true;
 
-// 
 
 import BackgroundMusic from "./components/BackgroundMusic"
 
 import Login from "./pages/Login";
 import MapScreen from "./pages/MapScreen"
 import SecondScreen from "./pages/SecondScreen"
+import ProfilePage from "./pages/ProfilePage"
+<<<<<<< HEAD
+
+=======
+>>>>>>> 5f48d8d (Feat: Added blank Profile page)
+
+
+import { FiSun, FiBarChart2, FiUser, FiMap, FiPackage } from "react-icons/fi";
+import { FaDog, FaPaw } from "react-icons/fa";
+import { GiDogHouse } from "react-icons/gi";
+import { MdPets } from "react-icons/md"
 
 
 
+// Navbar [more mobile friendly]
+function TabBar() {
+  const tabs = [
+    { to: "/", label: "Map", icon: <FiMap /> },
+    { to: "/second", label: "Avatar", icon: <MdPets /> },
+    { to: "/profile", label: "Profile", icon: <FiUser />},
+  ];
+
+  return (
+    <nav className="tabbar" aria-label="Bottom Navigation">
+      {tabs.map((t) => (
+        <NavLink
+          key={t.to}
+          to={t.to}
+          end={t.to === "/"} // makes "/" not stay active on every route
+          className={({ isActive }) => (isActive ? "tab active" : "tab")}
+        >
+          <span className="tab-icon" aria-hidden="true">
+            {t.icon}
+          </span>
+          <span className="tab-label">{t.label}</span>
+        </NavLink>
+      ))}
+    </nav>
+  );
+}
+
+import { FiSun, FiBarChart2, FiUser, FiMap, FiPackage } from "react-icons/fi";
+import { FaDog, FaPaw } from "react-icons/fa";
+import { GiDogHouse } from "react-icons/gi";
+import { MdPets } from "react-icons/md"
+
+
+
+// Navbar [more mobile friendly]
+function TabBar() {
+  const tabs = [
+    { to: "/", label: "Map", icon: <FiMap /> },
+    { to: "/second", label: "Avatar", icon: <MdPets /> },
+    { to: "/profile", label: "Profile", icon: <FiUser />},
+  ];
+
+  return (
+    <nav className="tabbar" aria-label="Bottom Navigation">
+      {tabs.map((t) => (
+        <NavLink
+          key={t.to}
+          to={t.to}
+          end={t.to === "/"} // makes "/" not stay active on every route
+          className={({ isActive }) => (isActive ? "tab active" : "tab")}
+        >
+          <span className="tab-icon" aria-hidden="true">
+            {t.icon}
+          </span>
+          <span className="tab-label">{t.label}</span>
+        </NavLink>
+      ))}
+    </nav>
+  );
+}
 
 function App() {
   const token = localStorage.getItem("token");
@@ -155,7 +225,24 @@ return (
               />
             }
           />
+
+          <Route
+            path="/profile"
+            element={
+              <ProfilePage
+                // userId={userId}
+                // collectedItems={collectedItems}
+                // equipped={equipped}
+                // setEquipped={setEquipped}
+              />
+            }
+          />
+
+
         </Routes>
+
+        <TabBar />
+
       </>
     )}
   </GoogleOAuthProvider>

@@ -218,11 +218,6 @@ export default function SecondScreen({ userId, collectedItems, equipped, setEqui
         <br></br>
       </div>
 
-      <div className="buttons">
-        <button onClick={() => navigate("/")}>
-          Go Back to Map
-        </button>
-      </div>
       
     </div>
     

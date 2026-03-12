@@ -26,6 +26,62 @@
 
 }
 
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  height: 72px;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+
+  background: rgba(225, 228, 243, 0.92);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  z-index: 999999px;
+}
+
+/* Each tab */
+.tab {
+  text-decoration: none;
+  color: var(--muted);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 11px;
+  transition: transform 0.08s ease, background 0.12s ease, color 0.12s ease;
+}
+
+.tab:active {
+  transform: scale(0.97);
+}
+
+/* Active tab (selected page) */
+.tab.active {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.tab-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.tab-label {
+  font-size: 12px;
+  margin-top: 3px;
+  letter-spacing: 0.2px;
+}
+
+
 .buttons {
   display: flex;
   gap: 12px;
@@ -86,6 +142,7 @@ html, body {
 /* This was added to keep the pointer (not the grab) when hovering over the map */
 .leaflet-container {
   cursor: pointer !important;
+  z-index: 0;
 }
 /* When actually grabbing/dragging the screen... return to the grab icon */
 .leaflet-dragging .leaflet-container {

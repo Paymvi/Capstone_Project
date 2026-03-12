@@ -68,3 +68,13 @@ import Thing from "./file"
 export function Thing
 import { Thing } from "./file"
 - Export many functions or variables
+
+
+React icons
+Prefix	Library	Style
+fi	Feather Icons	minimal / modern
+fa	Font Awesome	classic / general
+gi	Game Icons	    video game style
+md	Material Design	Google / Android style
+io	Ionicons	    mobile / iOS style
+bs	Bootstrap Icons	UI components
