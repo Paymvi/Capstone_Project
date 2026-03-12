@@ -180,10 +180,10 @@ const jwt = require("jsonwebtoken");
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 
 app.get("/", (req, res) => {
-    res.send("Roamie is running on port 5000 🔥");
+    res.send("Roamie is running on port 3000 🔥");
 });
 
 // Creates a new user account 

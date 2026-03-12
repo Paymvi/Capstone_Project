@@ -8,7 +8,7 @@ import { apiGetState, apiAddMarker, apiSetEquipped } from "./api";
 
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
-const DEV_MODE = true;
+const DEV_MODE = false;
 
 // 
 
@@ -110,7 +110,7 @@ function App() {
   console.log("CLIENT ID:", import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
 return (
-  <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+  <GoogleOAuthProvider clientId="167049612356-r14p57se5j7sjouc7ovlgadkcfiosbj3.apps.googleusercontent.com">
     
     {!userId ? (
       <Login onLoggedIn={(id) => setUserId(id)} />

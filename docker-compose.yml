@@ -1,13 +1,11 @@
-version: "3.8"
-
 services:
   db:
     image: postgres:15
     container_name: roamie_db
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: RoamieTeamUp2026
+      POSTGRES_USER: roamie_user
+      POSTGRES_PASSWORD: roamie_pass
       POSTGRES_DB: roamie
     ports:
       - "5432:5432"
