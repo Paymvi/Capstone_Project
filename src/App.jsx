@@ -7,7 +7,7 @@ import { apiGetState, apiAddMarker, apiSetEquipped } from "./api";
 
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
-const DEV_MODE = true;
+const DEV_MODE = false;
 
 
 import BackgroundMusic from "./components/BackgroundMusic"
@@ -191,8 +191,8 @@ return (
             path="/profile"
             element={
               <ProfilePage
-                // userId={userId}
-                // collectedItems={collectedItems}
+                userId={userId}
+                collectedItems={collectedItems}
                 // equipped={equipped}
                 // setEquipped={setEquipped}
               />
