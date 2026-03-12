@@ -16,6 +16,7 @@ export default function MapScreen({ userId, collectedItems, setCollectedItems, m
   const navigate = useNavigate();
   const [uiLocked, setUiLocked] = useState(false);
   const [message, setMessage] = useState(null);
+  //const [location, setLocations] = 
   
 
   // --------------------------------- Pegman ------------------------------
@@ -111,7 +112,7 @@ const [staticLocations, setStaticLocations] = useState([
             const updated = [...prev, loc.accessoryId];
 
             // Save to backend
-            if (!DEV_MODE) {
+            if (DEV_MODE) {
               apiSetCollected(loc.accessoryId);
             }
 

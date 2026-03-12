@@ -1,10 +1,11 @@
 CREATE TABLE users (
-	id SERIAL PRIMARY KEY,
-	google_sub VARCHAR(255) UNIQUE,
-	username VARCHAR(255) UNIQUE,
-	name VARCHAR(255),
-	password_hash VARCHAR(255),
-	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(255),
+  email VARCHAR(255),
+  google_sub VARCHAR(255),
+  name VARCHAR(255),
+  password_hash VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE items (

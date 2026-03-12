@@ -1,31 +1,58 @@
+import { apiPasswordLogin, apiRegister, apiGoogleLogin } from "../api";
+import { useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
+import "./Login.css";
 
-function Login() {
+export default function Login({ onLoggedIn }) {
   const navigate = useNavigate();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+
+  async function handleLogin() {
+    try {
+
+      const data = await apiPasswordLogin(username, password);
+
+      localStorage.setItem("token", data.token);
+
+      onLoggedIn(data.user.id);
+
+      navigate("/");
+
+    }
+    catch (err){
+      console.error("Login error", err);
+    }
+  }
+
+  async function handleRegister(){
+    try { 
+      const data = await apiRegister(username, password );
+
+      alert("🎉 Account created successfully! 🎉")
+
+      localStorage.setItem("token", data.token);
+
+      navigate("/");
+    }
+    catch (err){
+      console.error("Register error:", err);
+    }
+  }
 
   const handleSuccess = async (credentialResponse) => {
     try {
+
       const token = credentialResponse.credential;
 
-      const res = await fetch("http://localhost:3000/auth/google", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ token }),
-      });
+      const data = await apiGoogleLogin(token);
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Login failed");
-      }
-
-      // Save JWT
       localStorage.setItem("token", data.token);
+      localStorage.setItem("userId", data.user.id);
 
-      // Redirect to main app
+      onLoggedIn(data.user.id);
+
       navigate("/");
 
     } catch (err) {
@@ -34,14 +61,57 @@ function Login() {
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh", justifyContent: "center", alignItems: "center", flexDirection: "column" }}>
-      <h1>Welcome to Roamie</h1>
-      <GoogleLogin
-        onSuccess={handleSuccess}
-        onError={() => console.log("Login Failed")}
-      />
+    <div className="login-container">
+
+      {/* LEFT SIDE */}
+      <div className="login-left">
+        <div className="left-content">
+          <h1 className="logo">Welcome to Roamie!</h1>
+          <h2>Roam together</h2>
+        </div>
+      </div>
+
+      {/* RIGHT SIDE */}
+      <div className="login-right">
+        <div className="login-card">
+          <h2>Login</h2>
+
+            <input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Enter username"
+              style={{ padding: 8 }}
+            />
+
+            <input 
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+            />
+
+            <button className="login-btn"
+              onClick={handleLogin}
+              style={{ marginLeft: 10, padding: 8 }}
+            >
+              Login
+            </button>
+
+            <button className="login-btn"
+              onClick={handleRegister}
+              style={{ marginLeft: 10, padding: 8 }}
+            >
+              Register
+            </button>
+
+            <p>Type any name. It will persist!</p>
+
+            <GoogleLogin className ="google-btn"
+              onSuccess={handleSuccess}
+              onError={() => console.log("Login Failed")}
+            />
+        </div>
+      </div>
     </div>
   );
 }
-
-export default Login;

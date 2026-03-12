@@ -3,7 +3,6 @@ import './App.css'
 import 'leaflet/dist/leaflet.css';
 import { Routes, Route, useNavigate } from "react-router-dom";
 
-import Login from "./Login";
 import { apiGetState, apiAddMarker, apiSetEquipped } from "./api";
 
 import { GoogleOAuthProvider } from "@react-oauth/google";
@@ -14,6 +13,7 @@ const DEV_MODE = false;
 
 import BackgroundMusic from "./components/BackgroundMusic"
 
+import Login from "./pages/Login";
 import MapScreen from "./pages/MapScreen"
 import SecondScreen from "./pages/SecondScreen"
 
@@ -110,7 +110,7 @@ function App() {
   console.log("CLIENT ID:", import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
 return (
-  <GoogleOAuthProvider clientId="167049612356-r14p57se5j7sjouc7ovlgadkcfiosbj3.apps.googleusercontent.com">
+  <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
     
     {!userId ? (
       <Login onLoggedIn={(id) => setUserId(id)} />
