@@ -28,22 +28,24 @@
 
 .tabbar {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: 16px;
+  right: 16px;
+  bottom: 14px;
 
-  height: 72px;
-  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  height: 64px;
 
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
 
-  background: rgba(225, 228, 243, 0.92);
-  backdrop-filter: blur(10px);
-  border-top: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  z-index: 999999px;
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(14px);
+
+  border-radius: 20px;
+
+  border: 1px solid rgba(0,0,0,0.08);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+
+  z-index: 9999;
 }
 
 /* Each tab */
