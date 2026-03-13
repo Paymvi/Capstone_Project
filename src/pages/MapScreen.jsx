@@ -284,15 +284,6 @@ const [staticLocations, setStaticLocations] = useState([
     
 
     <div style={{ height: '100vh', width: '100vw'}}>
-
-        <div className="buttons">
-          <button onClick={() => navigate("/second")} >
-            Avatar
-          </button>
-          {/* <button onClick={() => navigate("/third")} >
-            Profile
-          </button> */}
-        </div>
         
     
         {/* This is where the map lives */}
