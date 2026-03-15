@@ -1,15 +1,26 @@
 import { useState, useEffect, useRef } from "react";
 import L from 'leaflet';
-import { MapContainer, TileLayer } from 'react-leaflet';  // initializes and manages the Leaflet map 
 import 'leaflet/dist/leaflet.css';
-import { Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import { useNavigate } from "react-router-dom";
 
 import { apiAddMarker} from "../api";
 import { apiSetCollected } from "../api";
 import ClickHandler from "../components/ClickHandler"
 
-const DEV_MODE = true;
+const DEV_MODE = false;
+
+// Lets map pan to the currrent user location
+function RecenterMap({ position, shouldCenter }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!position || !shouldCenter) return;
+    map.setView(position, map.getZoom());
+  }, [position, shouldCenter, map]);
+
+  return null;
+}
 
 export default function MapScreen({ userId, collectedItems, setCollectedItems, markers, setMarkers })
 {
@@ -29,71 +40,123 @@ export default function MapScreen({ userId, collectedItems, setCollectedItems, m
   const mapCenter = [43.0401221381528, -71.45140083791992];
   const [pegmanPosition, setPegmanPosition] = useState(mapCenter);
   
-  const isDraggingPegman = useRef(false)
+  // const isDraggingPegman = useRef(false)
+  const [locationError, setLocationError] = useState("");
+  const [locationLoading, setLocationLoading] = useState(true);
+  const [hasCenteredOnce, setHasCenteredOnce] = useState(false);
 
   // ------------------------------------------------------------------------
+  // Static locations for item drops
+  // Need to turn it into state to update "collected"
+  const [staticLocations, setStaticLocations] = useState([
+    {
+      id: 1,
+      position: [43.03881471145394, -71.45190238952638],
+      title: "Crown",
+      description: "Collect your crown at the library!",
+      img: "/Roamie-Crown-2.png",
+      accessoryId: "hat_crown",
+      radius: 30,   // 30 meters
+      collected: false
+    },
+    {
+      id: 2,
+      position: [43.039763539565556, -71.45380139350893],
+      title: "Flower",
+      description: "Flower Power Drop!!!",
+      img: "/Roamie-Flower.png",
+      accessoryId: "hat_flower",
+      radius: 30,
+      collected: false
+    },
+    {
+      id: 3,
+      position: [43.038673562216715, -71.45618319511415],
+      title: "Dumbbell",
+      description: "Collect this limited edition dumbbell!",
+      img: "/Roamie-Dumbbell-2.png",
+      accessoryId: "outside_dumbbell",
+      radius: 30,
+    },
+    {
+      id: 4,
+      position: [43.03951261124411, -71.45159125328065],
+      title: "Santa Hat",
+      description: "Santa hat drop!!!",
+      img: "/Roamie-SantaHat.png",
+      accessoryId: "hat_santahat",
+      radius: 30,
 
-// Static locations for item drops
-// Need to turn it into state to update "collected"
-const [staticLocations, setStaticLocations] = useState([
-  {
-    id: 1,
-    position: [43.03881471145394, -71.45190238952638],
-    title: "Crown",
-    description: "Collect your crown at the library!",
-    img: "/Roamie-Crown-2.png",
-    accessoryId: "hat_crown",
-    radius: 30,   // 30 meters
-    collected: false
-  },
-  {
-    id: 2,
-    position: [43.039763539565556, -71.45380139350893],
-    title: "Flower",
-    description: "Flower Power Drop!!!",
-    img: "/Roamie-Flower.png",
-    accessoryId: "hat_flower",
-    radius: 30,
-    collected: false
-  },
-  {
-    id: 3,
-    position: [43.038673562216715, -71.45618319511415],
-    title: "Dumbbell",
-    description: "Collect this limited edition dumbbell!",
-    img: "/Roamie-Dumbbell-2.png",
-    accessoryId: "outside_dumbbell",
-    radius: 30,
-  },
-  {
-    id: 4,
-    position: [43.03951261124411, -71.45159125328065],
-    title: "Santa Hat",
-    description: "Santa hat drop!!!",
-    img: "/Roamie-SantaHat.png",
-    accessoryId: "hat_santahat",
-    radius: 30,
+    },
+    {
+      id: 5,
+      position: [43.04064962199054, -71.4509153366089],
+      title: "Coat",
+      description: "Stay warm and collect this fluffy coat!!!",
+      img: "/Roamie-Coat-2.png",
+      accessoryId: "body_coat",
+      radius: 30,
+    },
+    {
+      id: 6,
+      position: [43.04091622835737, -71.45213842391969],
+      title: "Shield",
+      description: "Collect this Shiny Shield!!!",
+      img: "/Roamie-Shield-2.png",
+      accessoryId: "outside_shield",
+      radius: 30,
+    }
+  ]);
 
-  },
-  {
-    id: 5,
-    position: [43.04064962199054, -71.4509153366089],
-    title: "Coat",
-    description: "Stay warm and collect this fluffy coat!!!",
-    img: "/Roamie-Coat-2.png",
-    accessoryId: "body_coat",
-    radius: 30,
-  },
-  {
-    id: 6,
-    position: [43.04091622835737, -71.45213842391969],
-    title: "Shield",
-    description: "Collect this Shiny Shield!!!",
-    img: "/Roamie-Shield-2.png",
-    accessoryId: "outside_shield",
-    radius: 30,
-  }
-]);
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation is not supported by this device/browser.");
+      setLocationLoading(false);
+      return;
+    }
+
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        const coords = [latitude, longitude];
+
+        setPegmanPosition(coords);
+        setLocationError("");
+        setLocationLoading(false);
+
+        if (!hasCenteredOnce) {
+          setHasCenteredOnce(true);
+        }
+
+        console.log("Live location:", coords);
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+
+        let message = "Unable to retrieve location.";
+
+        if (error.code === 1) {
+          message = "Location permission was denied.";
+        } else if (error.code === 2) {
+          message = "Location unavailable. Try going outside or checking signal.";
+        } else if (error.code === 3) {
+          message = "Location request timed out.";
+        }
+
+        setLocationError(message);
+        setLocationLoading(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 2000,
+      }
+    );
+
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+    };
+  }, [hasCenteredOnce]);
 
   // This checks to see if you collected an item everytime the map rerenders
   useEffect(() => {
@@ -111,9 +174,11 @@ const [staticLocations, setStaticLocations] = useState([
 
             const updated = [...prev, loc.accessoryId];
 
-            // Save to backend
-            if (DEV_MODE) {
-              apiSetCollected(loc.accessoryId);
+            // Save to backend (if not in dev mode)
+            if (!DEV_MODE) {
+              apiSetCollected(loc.accessoryId).catch((err) => {
+                console.error("Failed to save collected item:", err);
+              });
             }
 
             return updated;
@@ -284,6 +349,18 @@ const [staticLocations, setStaticLocations] = useState([
     
 
     <div style={{ height: '100vh', width: '100vw'}}>
+
+        {locationLoading && (
+          <div className="proximity-alert">
+            Finding your location...
+          </div>
+        )}
+
+        {locationError && (
+          <div className="proximity-alert">
+            {locationError}
+          </div>
+        )}
         
     
         {/* This is where the map lives */}
@@ -292,6 +369,8 @@ const [staticLocations, setStaticLocations] = useState([
           zoom={16}
           style={{ height: '100%', width: '100%'}}
         >
+        
+        <RecenterMap position={pegmanPosition} shouldCenter={hasCenteredOnce} />
 
         {/* TileLayer defines the source of the map imagery */}
         <TileLayer
@@ -302,35 +381,16 @@ const [staticLocations, setStaticLocations] = useState([
         />
 
         {/* Pegman marker (with coordinate tracking) */}
-        <Marker
-          position={pegmanPosition}
-          icon={pegmanIcon}
-          draggable={true}
-          eventHandlers={{
-            dragstart: () => {
-              isDraggingPegman.current = true; // disables map clicking
-            },
-            dragend: (e) => {
-              const newPos = e.target.getLatLng();
-              const coords = [newPos.lat, newPos.lng];
-
-              setPegmanPosition(coords);
-
-              console.log("Pegman coordinates:", coords);
-
-              // Small timeout prevents click firing after drag
-              setTimeout(() => {
-                isDraggingPegman.current = false;
-  
-              }, 20);
-            },
-          }}
-        />
+        <Marker position={pegmanPosition} icon={pegmanIcon}>
+          <Popup>
+            You are here
+          </Popup>
+        </Marker>
 
         <ClickHandler 
           onMapClick={handleMapClick} 
           uiLocked={uiLocked} 
-          isDraggingPegman={isDraggingPegman}
+          // isDraggingPegman={isDraggingPegman}
         />
 
         {/* Static Markers */}
