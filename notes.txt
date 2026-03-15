@@ -87,3 +87,18 @@ git gc
 
 fileInputRef.current?.click
 ^ Basically means "click the hidden upload button"
+
+
+
+
+GPS
+{
+  enableHighAccuracy: true,
+  timeout: 10000,
+  maximumAge: 2000
+}
+
+This tells the device:
+- Use GPS instead of Wi-Fi if possible.
+- Wait 10 seconds max for a location before throwing an error.
+- The browser can reuse a location that is up to 2 seconds old.
