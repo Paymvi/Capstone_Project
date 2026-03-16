@@ -12,10 +12,12 @@ const DEV_MODE = false;
 
 import BackgroundMusic from "./components/BackgroundMusic"
 
+import AdminPage from "./pages/AdminPage";
 import Login from "./pages/Login";
 import MapScreen from "./pages/MapScreen"
 import SecondScreen from "./pages/SecondScreen"
 import ProfilePage from "./pages/ProfilePage"
+
 
 import { FiSun, FiBarChart2, FiUser, FiMap, FiPackage } from "react-icons/fi";
 import { FaDog, FaPaw } from "react-icons/fa";
@@ -198,6 +200,8 @@ return (
               />
             }
           />
+
+          <Route path="/admin" element={<AdminPage />} />
 
 
         </Routes>

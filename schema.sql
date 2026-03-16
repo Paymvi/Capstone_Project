@@ -26,9 +26,10 @@ CREATE TABLE user_inventory (
 
 CREATE TABLE markers (
 	id SERIAL PRIMARY KEY,
-	user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
 	latitude FLOAT NOT NULL,
-	longitude FLOAT NOT NULL
+	longitude FLOAT NOT NULL,
+	item_id VARCHAR(255) REFERENCES items(item_id),
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE user_equipment (

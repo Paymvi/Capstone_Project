@@ -23,17 +23,9 @@ export async function apiPasswordLogin(username, password) {
 
 // Get user state
 export async function apiGetState() {
-  const token = localStorage.getItem("token");
-
-  const res = await fetch(`${API}/me/state`, {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
+  const res = await fetch("http://localhost:3000/me", {
+    headers: authHeaders()
   });
-
-  if (!res.ok) {
-    throw new Error("Failed to load state");
-  }
 
   return res.json();
 }

@@ -5,6 +5,7 @@ const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
 const authMiddleware = require("./middleware/authMiddleware");
+const requireAdmin = require("./middleware/adminMiddleware");
 const bcrypt = require("bcrypt");
 
 
@@ -316,28 +317,31 @@ app.post("/auth/google", async(req, res) => {
 });
 
 // Ensure users with a valid JWT token can access the main app
-app.get("/me", (req, res) => {
+app.get("/me", authMiddleware, async (req, res) => {
   try {
 
-    const authHeader = req.headers.authorization;
+    console.log("req.user:", req.user);
+    
+    const userId = req.user.userId;
 
-    if (!authHeader) {
-      return res.status(401).json({ error: "Missing token" });
+    const result = await pool.query(
+      `
+      SELECT id, username, email, is_admin
+      FROM users
+      WHERE id = $1
+      `,
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
     }
 
-    const token = authHeader.split(" ")[1];
-
-    if (!token) {
-      return res.status(401).json({ error: "Invalid token" });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    res.json(decoded);
+    res.json(result.rows[0]);
 
   } catch (err) {
-    console.error("JWT error:", err);
-    res.status(401).json({ error: "Invalid token" });
+    console.error("Error fetching user:", err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
@@ -433,18 +437,18 @@ app.put("/equip", authMiddleware, async (req, res) => {
 });
 
 // Save Marker
-app.post("/markers", authMiddleware, async (req, res) => {
-    const userId = req.user.userId;
-    const {latitude, longitude} = req.body;
+app.post("/admin/markers", authMiddleware, requireAdmin, async (req, res) => {
+    
+    const {latitude, longitude, item_id} = req.body;
 
     try{
         await pool.query(
             `
-            INSERT INTO markers (user_id, latitude, longitude)
+            INSERT INTO markers (latitude, longitude, item_id)
             VALUES ($1, $2, $3)
             `
         ,
-        [userId, latitude, longitude]
+        [latitude, longitude, item_id]
         );
 
         res.json({ success: true });
@@ -453,6 +457,23 @@ app.post("/markers", authMiddleware, async (req, res) => {
         res.status(500).json({error: err.message})
     }
 });
+
+// Player fetch markers route
+app.get("/markers", authMiddleware, async (req, res) => {
+  try{
+    const result = await pool.query(
+      `SELECT markers.*, items.image, items.name
+      FROM markers
+      LEFT JOIN items
+      ON markers.item_id = items.items_id`
+    );
+
+    res.json(result.rows);
+  }
+  catch(err){
+    res.status(500).json({ error: err.message });
+  }
+})
 
 // Register Route
 app.post("/auth/register", async (req, res) => {
@@ -528,6 +549,19 @@ app.post("/auth/login", async (req, res) => {
   }
 });
 
+// Admin Route
+app.post("/admin/marker", authMiddleware, requireAdmin, async (req, res) => {
+  const { lat, lng, item_type } = req.body;
+
+  const result = await db.query(
+    `INSERT INTO markers (lat, lng, item_type)
+    VALUES ($1, $2, $3)
+    RETURNING *`,
+    [lat, lng, item_type]
+  )
+
+  res.json(result.rows[0]);
+});
 
 // Test route
 app.get("/health/db", async (_req, res) => {
