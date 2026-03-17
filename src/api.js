@@ -1,5 +1,14 @@
 const API = "http://localhost:3000";
 
+export function authHeaders() {
+  const token = localStorage.getItem("token");
+
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`
+  };
+}
+
 // Login API
 export async function apiPasswordLogin(username, password) {
   const res = await fetch(`${API}/auth/login`, {
@@ -23,9 +32,14 @@ export async function apiPasswordLogin(username, password) {
 
 // Get user state
 export async function apiGetState() {
-  const res = await fetch("http://localhost:3000/me", {
+  const res = await fetch(`${API}/me/state`, {
+    method: "GET",
     headers: authHeaders()
   });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch state");
+  }
 
   return res.json();
 }

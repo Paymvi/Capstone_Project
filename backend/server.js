@@ -8,6 +8,8 @@ const authMiddleware = require("./middleware/authMiddleware");
 const requireAdmin = require("./middleware/adminMiddleware");
 const bcrypt = require("bcrypt");
 
+console.log("JWT_SECRET:", process.env.JWT_SECRET);
+
 
 const app = express();
 app.use(cors());
@@ -374,9 +376,10 @@ app.get("/me/state", authMiddleware, async (req, res) => {
         );
 
         res.json({
-            collectedItems: items.rows.map(r => r.item_id),
-            equipped: equipment.rows[0] || {},
-            markers: markers.rows
+          userId: userId,
+          collectedItems: items.rows.map(r => r.item_id),
+          equipped: equipment.rows[0] || {},
+          markers: markers.rows
         });
     }
     catch (err){

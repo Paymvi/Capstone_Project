@@ -14,6 +14,8 @@ export default function Login({ onLoggedIn }) {
 
       const data = await apiPasswordLogin(username, password);
 
+      console.log("LOGIN RESPONSE:", data);
+
       localStorage.setItem("token", data.token);
 
       onLoggedIn(data.user.id);

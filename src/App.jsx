@@ -54,7 +54,7 @@ function TabBar() {
 }
 
 function App() {
-  const token = localStorage.getItem("token");
+  const [token, setToken] = useState(localStorage.getItem("token"));
 
   const [collectedItems, setCollectedItems] = useState([]);
   const [equipped, setEquipped] = useState({
@@ -76,22 +76,45 @@ function App() {
 
   // Auto-login if saved
   useEffect(() => {
-    const saved = localStorage.getItem("userId");
-    if (saved) {
-      setUserId(Number(saved));
-    }
+    const savedToken = localStorage.getItem("token");
+
+    if (!savedToken) return;
+      setToken(savedToken);
+
+      // try loading state
+      apiGetState()
+        .then((data) => {
+          setUserId(data.userId);
+
+          setCollectedItems(data.collectedItems || []);
+          setEquipped(data.equipped || { hat: null, body: null, outside: null });
+
+          if (data.markers) {
+            setMarkers(
+              data.markers.map(m => ({
+                latlng: [m.latitude, m.longitude]
+              }))
+            );
+          }
+        })
+        .catch(() => {
+          console.log("Invalid token, forcing login");
+          localStorage.removeItem("token");
+          setUserId(null);
+        });
+    
   }, []);
 
   // Verify token
-  useEffect(() => {
-    if (!token) return;
+//   useEffect(() => {
+//     if (!token) return;
 
-    fetch("http://localhost:3000/me", {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-}, []);
+//     fetch("http://localhost:3000/me", {
+//       headers: {
+//         Authorization: `Bearer ${token}`
+//       }
+//     });
+// }, []);
 
   // When user logs in, load their saved state
   useEffect(() => {
@@ -146,7 +169,12 @@ return (
   <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
     
     {!userId ? (
-      <Login onLoggedIn={(id) => setUserId(id)} />
+      <Login
+        onLoggedIn={(id) => {
+          setUserId(id);
+          setToken(localStorage.getItem("token"));
+        }}
+      />
     ) : (
       <>
         <BackgroundMusic />
@@ -154,8 +182,11 @@ return (
         <div style={{ position: "absolute", top: 50, right: 20, zIndex: 1000 }}>
           <button
             onClick={() => {
+              localStorage.removeItem("token");
               localStorage.removeItem("userId");
+
               setUserId(null);
+              setToken(null);
             }}
             style={{ padding: 8 }}
           >
