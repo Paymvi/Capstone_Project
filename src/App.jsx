@@ -63,6 +63,8 @@ function App() {
     outside: null,
   });
 
+  const [user, setUser] = useState(null);
+
   const [userId, setUserId] = useState(null);
 
   useEffect(() => {
@@ -85,6 +87,11 @@ function App() {
       apiGetState()
         .then((data) => {
           setUserId(data.userId);
+
+          setUser({
+            id: data.userId,
+            is_admin: data.is_admin // might be undefined depending on backend
+          });          
 
           setCollectedItems(data.collectedItems || []);
           setEquipped(data.equipped || { hat: null, body: null, outside: null });
@@ -137,12 +144,18 @@ function App() {
 
     return;
   }
+  
 
   apiGetState()
     .then((data) => {
         setCollectedItems(data.collectedItems || []);
         setEquipped(data.equipped || { hat: null, body: null, outside: null });
 
+        setUser({
+          id: data.userId,
+          is_admin: data.is_admin
+        });
+        
         if (data.markers) {
           setMarkers(
             data.markers.map(m => ({
@@ -199,6 +212,7 @@ return (
             path="/"
             element={
               <MapScreen
+                user = {user}
                 userId={userId}
                 collectedItems={collectedItems}
                 setCollectedItems={setCollectedItems}

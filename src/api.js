@@ -46,18 +46,19 @@ export async function apiGetState() {
 
 
 // Add marker
-export async function apiAddMarker(latitude, longitude) {
+export async function apiAddMarker(lat, lng) {
   const token = localStorage.getItem("token");
+  console.log("TOKEN:", token);
 
-  const res = await fetch(`${API}/markers`, {
+  const res = await fetch("http://localhost:3000/admin/markers", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`
     },
     body: JSON.stringify({
-      latitude,
-      longitude
+      lat: lat,
+      lng: lng,
     })
   });
 

@@ -7,7 +7,7 @@ export default function AdminPage() {
   const [itemId, setItemId] = useState("");
   const [user, setUser] = useState(null);
 
-    // Load current user
+  // Load current user
   useEffect(() => {
 
     const token = localStorage.getItem("token");

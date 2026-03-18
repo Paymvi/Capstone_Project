@@ -1,4 +1,5 @@
 require("dotenv").config();
+const SECRET = process.env.JWT_SECRET;
 
 const express = require("express");
 const cors = require("cors");
@@ -304,7 +305,8 @@ app.post("/auth/google", async(req, res) => {
         const appToken = jwt.sign(
             {
                 userId: user.id,
-                email: user.email
+                email: user.email,
+                is_admin: user.is_admin
             },
             process.env.JWT_SECRET, 
             {expiresIn: "7d"}
@@ -375,8 +377,16 @@ app.get("/me/state", authMiddleware, async (req, res) => {
             [userId]
         );
 
+        const userResult = await pool.query(
+          `SELECT is_admin 
+          FROM users 
+          WHERE id = $1`,
+          [userId]
+        );
+
         res.json({
           userId: userId,
+          is_admin: userResult.rows[0]?.is_admin || false,
           collectedItems: items.rows.map(r => r.item_id),
           equipped: equipment.rows[0] || {},
           markers: markers.rows
@@ -440,26 +450,26 @@ app.put("/equip", authMiddleware, async (req, res) => {
 });
 
 // Save Marker
-app.post("/admin/markers", authMiddleware, requireAdmin, async (req, res) => {
+// app.post("/admin/markers", authMiddleware, requireAdmin, async (req, res) => {
     
-    const {latitude, longitude, item_id} = req.body;
+//     const {latitude, longitude, item_id} = req.body;
 
-    try{
-        await pool.query(
-            `
-            INSERT INTO markers (latitude, longitude, item_id)
-            VALUES ($1, $2, $3)
-            `
-        ,
-        [latitude, longitude, item_id]
-        );
+//     try{
+//         await pool.query(
+//             `
+//             INSERT INTO markers (latitude, longitude, item_id)
+//             VALUES ($1, $2, $3)
+//             `
+//         ,
+//         [latitude, longitude, item_id]
+//         );
 
-        res.json({ success: true });
-    }
-    catch (err){
-        res.status(500).json({error: err.message})
-    }
-});
+//         res.json({ success: true });
+//     }
+//     catch (err){
+//         res.status(500).json({error: err.message})
+//     }
+// });
 
 // Player fetch markers route
 app.get("/markers", authMiddleware, async (req, res) => {
@@ -538,11 +548,11 @@ app.post("/auth/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid password" });
     }
 
-    const token = jwt.sign(
-      { userId: user.id },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    const token = jwt.sign({
+      userId: user.id,
+      email: user.email,
+      is_admin: user.is_admin
+    }, SECRET);
 
     res.json({ token, user });
 
@@ -553,17 +563,18 @@ app.post("/auth/login", async (req, res) => {
 });
 
 // Admin Route
-app.post("/admin/marker", authMiddleware, requireAdmin, async (req, res) => {
-  const { lat, lng, item_type } = req.body;
+app.post("/admin/markers", authMiddleware, requireAdmin, async (req, res) => {
+  const { lat, lng } = req.body;
 
-  const result = await db.query(
-    `INSERT INTO markers (lat, lng, item_type)
+  const result = await pool.query(
+    `INSERT INTO markers (user_id, latitude, longitude)
     VALUES ($1, $2, $3)
     RETURNING *`,
-    [lat, lng, item_type]
+    [req.user.userId, lat, lng]
   )
 
   res.json(result.rows[0]);
+  console.log("USER:", req.user);
 });
 
 // Test route

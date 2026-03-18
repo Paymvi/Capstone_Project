@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import { useNavigate } from "react-router-dom";
 
 import { apiAddMarker} from "../api";
@@ -22,7 +22,37 @@ function RecenterMap({ position, shouldCenter }) {
   return null;
 }
 
-export default function MapScreen({ userId, collectedItems, setCollectedItems, markers, setMarkers })
+function AdminMarkerPlacer({ isAdmin, onAddMarker }) {
+  useMapEvents({
+    click(e) {
+      if (!isAdmin) return;
+
+      const { lat, lng } = e.latlng;
+      console.log("Admin placing marker:", lat, lng);
+
+      onAddMarker(lat, lng); 
+    }
+  });
+
+  return null;
+}
+
+// function MapClickHandler({ isAdmin, onAddMarker }) {
+//   useMapEvents({
+//     click(e) {
+//       if (!isAdmin) return;
+
+//       const { lat, lng } = e.latlng;
+//       console.log("Clicked at:", lat, lng);
+
+//       onAddMarker(lat, lng);
+//     },
+//   });
+
+//   return null;
+// }
+
+export default function MapScreen({ user, userId, collectedItems, setCollectedItems, markers, setMarkers })
 {
   const navigate = useNavigate();
   const [uiLocked, setUiLocked] = useState(false);
@@ -327,6 +357,24 @@ export default function MapScreen({ userId, collectedItems, setCollectedItems, m
 
   };
 
+  async function handleAddMarker(lat, lng) {
+    try {
+      const newMarker = await apiAddMarker(lat, lng);
+
+      // instantly show marker
+      setMarkers(prev => [
+        ...prev,
+        {
+          latlng: [lat, lng],
+          info: "Admin Drop"
+        }
+      ]);
+
+    } catch (err) {
+      console.error("Failed to add marker", err);
+    }
+  }
+
   
   // Adds the edit and delete buttons next to the side bar elements
   const handleEdit = (id) => {
@@ -361,6 +409,12 @@ export default function MapScreen({ userId, collectedItems, setCollectedItems, m
             {locationError}
           </div>
         )}
+
+        {user?.is_admin && (
+          <div className="admin-banner">
+            🛠 Admin Mode: Click to place items
+          </div>
+        )}
         
     
         {/* This is where the map lives */}
@@ -380,6 +434,12 @@ export default function MapScreen({ userId, collectedItems, setCollectedItems, m
 
         />
 
+        {/* Admin Marker Placement */}
+        <AdminMarkerPlacer 
+          isAdmin={user?.is_admin}
+          onAddMarker={handleAddMarker} 
+        />
+
         {/* Pegman marker (with coordinate tracking) */}
         <Marker position={pegmanPosition} icon={pegmanIcon}>
           <Popup>
@@ -390,6 +450,7 @@ export default function MapScreen({ userId, collectedItems, setCollectedItems, m
         <ClickHandler 
           onMapClick={handleMapClick} 
           uiLocked={uiLocked} 
+          isAdmin={user?.is_admin}
           // isDraggingPegman={isDraggingPegman}
         />
 
