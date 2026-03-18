@@ -4,7 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import { useNavigate } from "react-router-dom";
 
-import { apiAddMarker, apiGetMarkers } from "../api";
+import { apiAddMarker, apiGetMarkers, apiGetItems  } from "../api";
 import { apiSetCollected } from "../api";
 import ClickHandler from "../components/ClickHandler"
 
@@ -56,14 +56,19 @@ function AdminMarkerPlacer({ isAdmin, onAddMarker }) {
 export default function MapScreen({ user, userId, collectedItems, setCollectedItems })
 {
 
-
-
   async function loadMarkers() {
     try {
       const data = await apiGetMarkers();
 
+      console.log("MARKER DATA:", data);
+
       const formatted = data.map(m => ({
+        id: m.id,
         latlng: [m.latitude, m.longitude],
+        name: m.name,
+        image: m.image,
+        item_id: m.item_id, 
+        radius: 30,
       }));
 
       setMarkers(formatted);
@@ -76,6 +81,8 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
   const [uiLocked, setUiLocked] = useState(false);
   const [message, setMessage] = useState(null);
   const [markers, setMarkers] = useState([]);
+  const [items, setItems] = useState([]);
+  const [selectedItem, setSelectedItem] = useState("");
 
   const blueMarker = new L.Icon({
     iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -256,6 +263,21 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
     return () => clearTimeout(timer);
   }, [message]);
 
+  // Load items into the dropdown menu
+  useEffect(() => {
+    async function loadItems() {
+      try{
+        const data = await apiGetItems();
+        setItems(data);
+      }
+      catch(err){
+        console.error("Failed to load items", err);
+      }
+    }
+
+    loadItems();
+  }, []);
+
 
   // Audio for when you collect an item
   useEffect(() => {
@@ -333,7 +355,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
     //   // loading: true
     // }
 
-    await apiAddMarker(latlng.lat, latlng.lng);
+    await apiAddMarker(latlng.lat, latlng.lng, selectedItem);
 
     // Add this information immediately to the map
     // setMarkers((prev) => [
@@ -392,7 +414,12 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
 
   async function handleAddMarker(lat, lng) {
     try {
-      await apiAddMarker(lat, lng);
+      if (!selectedItem) {
+        alert("Select an item first!");
+        return;
+      }
+
+      await apiAddMarker(lat, lng, selectedItem);
       await loadMarkers();
     } catch (err) {
       console.error("Failed to add marker", err);
@@ -440,6 +467,31 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
           </div>
         )}
         
+        {/* This is where the dropdown UI will be added */}
+        {user?.is_admin && (
+          <div style={{
+            position: "absolute",
+            top: "10px",
+            left: "10px",
+            zIndex: 1000,
+            background: "white",
+            padding: "8px",
+            borderRadius: "8px"
+          }}>
+            <select
+              value={selectedItem}
+              onChange={(e) => setSelectedItem(e.target.value)}
+            >
+              <option value="">Select Item</option>
+
+              {items.map(item => (
+                <option key={item.item_id} value={item.item_id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
     
         {/* This is where the map lives */}
         <MapContainer
@@ -522,12 +574,14 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
             
             <Popup className="custom-popup">
               <div className="popup-content">
-                <div className="title">{loc.info || "Saved Location"}</div>
+                <div className="title">{loc.name}</div>
                 
-                <div className="section">
-                  <div className="info">
-                    <span>Custom location marker</span>
-                  </div>
+                <div style={{ textAlign: "center", marginTop: "8px" }}>
+                  <img
+                    src={loc.image}
+                    alt={loc.name}
+                    style={{ width: "80px" }}
+                  />
                 </div>
 
                 {/* {loc.loading && (

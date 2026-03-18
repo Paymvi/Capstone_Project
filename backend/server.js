@@ -398,6 +398,16 @@ app.get("/me/state", authMiddleware, async (req, res) => {
     }
 });
 
+// Retrieve Item
+app.get("/items", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM items");
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Collect Item
 app.post("/items/collect", authMiddleware, async (req, res) => {
     const userId = req.user.userId;
@@ -475,7 +485,16 @@ app.put("/equip", authMiddleware, async (req, res) => {
 app.get("/markers", authMiddleware, async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT * FROM markers
+      SELECT 
+        markers.id,
+        markers.latitude,
+        markers.longitude,
+        markers.item_id,
+        items.name,
+        items.image
+      FROM markers
+      LEFT JOIN items 
+      ON markers.item_id = items.item_id;
     `);
 
     res.json(result.rows);
@@ -561,14 +580,16 @@ app.post("/auth/login", async (req, res) => {
 });
 
 // Admin Route
-app.post("/admin/markers", authMiddleware, requireAdmin, async (req, res) => {
-  const { lat, lng } = req.body;
+app.post("/markers", authMiddleware, requireAdmin, async (req, res) => {
+  const { lat, lng, item_id } = req.body;
+
+  console.log("ADMIN ADD MARKER: ", { lat, lng, item_id });
 
   const result = await pool.query(
-    `INSERT INTO markers (user_id, latitude, longitude)
-    VALUES ($1, $2, $3)
+    `INSERT INTO markers (user_id, latitude, longitude, item_id)
+    VALUES ($1, $2, $3, $4)
     RETURNING *`,
-    [req.user.userId, lat, lng]
+    [req.user.userId, lat, lng, item_id]
   )
 
   res.json(result.rows[0]);

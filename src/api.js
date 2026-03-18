@@ -46,25 +46,21 @@ export async function apiGetState() {
 
 
 // Add marker
-export async function apiAddMarker(lat, lng) {
+export async function apiAddMarker(lat, lng, item_id) {
   const token = localStorage.getItem("token");
-  console.log("TOKEN:", token);
 
-  const res = await fetch("http://localhost:3000/admin/markers", {
+  const res = await fetch("http://localhost:3000/markers", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
       lat: lat,
       lng: lng,
-    })
+      item_id: item_id, // 🔥 MUST BE HERE
+    }),
   });
-
-  if (!res.ok) {
-    throw new Error("Failed to add marker");
-  }
 
   return res.json();
 }
@@ -117,6 +113,11 @@ export async function apiSetCollected(itemId) {
   return res.json();
 }
 
+//Get items
+export async function apiGetItems() {
+  const res = await fetch("http://localhost:3000/items");
+  return res.json();
+}
 
 // Register API
 export async function apiRegister(username, password) {
