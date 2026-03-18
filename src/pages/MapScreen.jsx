@@ -4,7 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import { useNavigate } from "react-router-dom";
 
-import { apiAddMarker} from "../api";
+import { apiAddMarker, apiGetMarkers } from "../api";
 import { apiSetCollected } from "../api";
 import ClickHandler from "../components/ClickHandler"
 
@@ -37,6 +37,7 @@ function AdminMarkerPlacer({ isAdmin, onAddMarker }) {
   return null;
 }
 
+
 // function MapClickHandler({ isAdmin, onAddMarker }) {
 //   useMapEvents({
 //     click(e) {
@@ -52,12 +53,38 @@ function AdminMarkerPlacer({ isAdmin, onAddMarker }) {
 //   return null;
 // }
 
-export default function MapScreen({ user, userId, collectedItems, setCollectedItems, markers, setMarkers })
+export default function MapScreen({ user, userId, collectedItems, setCollectedItems })
 {
+
+
+
+  async function loadMarkers() {
+    try {
+      const data = await apiGetMarkers();
+
+      const formatted = data.map(m => ({
+        latlng: [m.latitude, m.longitude],
+      }));
+
+      setMarkers(formatted);
+    } catch (err) {
+      console.error("Failed to load markers", err);
+    }
+  } 
+
   const navigate = useNavigate();
   const [uiLocked, setUiLocked] = useState(false);
   const [message, setMessage] = useState(null);
-  //const [location, setLocations] = 
+  const [markers, setMarkers] = useState([]);
+
+  const blueMarker = new L.Icon({
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+  });
+
+  console.log("MAPSCREEN MARKERS PROP:", markers);
   
 
   // --------------------------------- Pegman ------------------------------
@@ -240,6 +267,12 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
 
   }, [message]);
 
+  // To load markers from the player view
+  useEffect(() => {
+    if (!userId) return;
+    loadMarkers();
+  }, [userId]);
+
 
   const [currentIcon, setCurrentIcon] = useState();
   const personaIcon = L.icon({
@@ -303,12 +336,12 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
     await apiAddMarker(latlng.lat, latlng.lng);
 
     // Add this information immediately to the map
-    setMarkers((prev) => [
-      ...prev,
-      {
-        latlng: [latlng.lat, latlng.lng]
-      }
-    ]);
+    // setMarkers((prev) => [
+    //   ...prev,
+    //   {
+    //     latlng: [latlng.lat, latlng.lng]
+    //   }
+    // ]);
 
 
     // Check Wi-Fi before making API calls (if there is none, have an error message)
@@ -359,17 +392,8 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
 
   async function handleAddMarker(lat, lng) {
     try {
-      const newMarker = await apiAddMarker(lat, lng);
-
-      // instantly show marker
-      setMarkers(prev => [
-        ...prev,
-        {
-          latlng: [lat, lng],
-          info: "Admin Drop"
-        }
-      ]);
-
+      await apiAddMarker(lat, lng);
+      await loadMarkers();
     } catch (err) {
       console.error("Failed to add marker", err);
     }
@@ -494,7 +518,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
 
         {/* User Added Markers */}
         {markers.map((loc, i) => (
-          <Marker key={i} position={loc.latlng} icon={currentIcon || personaIcon}>
+          <Marker key={`${i}-${user?.is_admin}`} position={loc.latlng} icon={user?.is_admin ? personaIcon : blueMarker}>
             
             <Popup className="custom-popup">
               <div className="popup-content">

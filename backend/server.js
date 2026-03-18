@@ -473,20 +473,18 @@ app.put("/equip", authMiddleware, async (req, res) => {
 
 // Player fetch markers route
 app.get("/markers", authMiddleware, async (req, res) => {
-  try{
-    const result = await pool.query(
-      `SELECT markers.*, items.image, items.name
-      FROM markers
-      LEFT JOIN items
-      ON markers.item_id = items.items_id`
-    );
+  try {
+    const result = await pool.query(`
+      SELECT * FROM markers
+    `);
 
     res.json(result.rows);
-  }
-  catch(err){
+
+  } catch (err) {
+    console.error("MARKERS ERROR:", err); // 🔥 ADD THIS
     res.status(500).json({ error: err.message });
   }
-})
+});
 
 // Register Route
 app.post("/auth/register", async (req, res) => {

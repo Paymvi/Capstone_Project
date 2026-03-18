@@ -161,3 +161,22 @@ export async function apiGoogleLogin(token) {
 
   return data;
 }
+
+// Get Item Drop Markers
+export async function apiGetMarkers() {
+  const token = localStorage.getItem("token");
+    console.log("GET MARKERS TOKEN:", token);
+
+  const res = await fetch("http://localhost:3000/markers", {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  if(!res.ok){
+      console.log("GET MARKERS TOKEN:", token);
+    throw new Error("Failed to fetch markers");
+  }
+
+  return res.json();
+}
