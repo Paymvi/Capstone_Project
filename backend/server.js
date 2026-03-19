@@ -491,7 +491,8 @@ app.get("/markers", authMiddleware, async (req, res) => {
         markers.longitude,
         markers.item_id,
         items.name,
-        items.image
+        items.image, 
+        items.description
       FROM markers
       LEFT JOIN items 
       ON markers.item_id = items.item_id;
@@ -500,7 +501,7 @@ app.get("/markers", authMiddleware, async (req, res) => {
     res.json(result.rows);
 
   } catch (err) {
-    console.error("MARKERS ERROR:", err); // 🔥 ADD THIS
+    console.error("MARKERS ERROR:", err); // Debug message
     res.status(500).json({ error: err.message });
   }
 });

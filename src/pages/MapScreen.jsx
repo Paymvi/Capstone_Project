@@ -86,6 +86,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
         latlng: [m.latitude, m.longitude],
         name: m.name,
         image: m.image,
+        description: m.description,
         item_id: m.item_id, 
         radius: 30,
       }));
@@ -319,7 +320,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
       console.log("DISTANCE:", dist);
 
       // Pickup radius based on user location
-      if (dist < 150 && !collectedIds.has(marker.id)){
+      if (dist < 30 && !collectedIds.has(marker.id)){
         console.log("AUTO COLLECT:", marker.name);
         
         handleCollect(marker);
@@ -650,29 +651,35 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
             </Marker>
         ))}
 
-        {/* User Added Markers */}
+        {/* Admin Added Markers */}
         {markers.map((loc, i) => (
           <Marker key={`${i}-${user?.is_admin}`} position={loc.latlng} icon={user?.is_admin ? personaIcon : blueMarker}>
             
             <Popup className="custom-popup">
               <div className="popup-content">
                 <div className="title">{loc.name}</div>
-                
-                <div style={{ textAlign: "center", marginTop: "8px" }}>
-                  <img
-                    src={loc.image}
-                    alt={loc.name}
-                    style={{ width: "80px" }}
-                  />
-                </div>
+              </div>
 
-                {/* {loc.loading && (
-                  <div className="section">
-                    <div className="spinner" />
-                    <em>Loading...</em>
+              <div className="section">
+                <div className="info">                
+                  <div style={{ textAlign: "center", marginTop: "8px" }}>
+                    <img
+                      src={loc.image}
+                      alt={loc.name}
+                      style={{ 
+                        width: "80px",
+                        marginLeft: "auto",
+                        marginRight: "auto"
+                      }}
+                    />
                   </div>
-                )} */}
 
+                  <p style={{ fontSize: "12px", opacity: 0.8 }}>
+                    {loc.description}
+                  </p>
+
+                  <br></br>
+                </div>
               </div>
             </Popup>
           </Marker>
