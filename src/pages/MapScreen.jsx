@@ -4,7 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import { useNavigate } from "react-router-dom";
 
-import { apiAddMarker, apiGetMarkers, apiGetItems  } from "../api";
+import { apiAddMarker, apiGetMarkers, apiGetItems, apiGetState  } from "../api";
 import { apiSetCollected } from "../api";
 import ClickHandler from "../components/ClickHandler"
 
@@ -104,6 +104,9 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
 
       // Send to the backend 
       await apiSetCollected(marker.item_id);
+
+      // instant UI
+      setCollectedItems(prev => [...prev, marker.item_id]);
 
       // Remove marker locally
       setMarkers((prev) => prev.filter((m) => m.id !== marker.id));
@@ -275,9 +278,9 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
 
         if (distance <= loc.radius) {
           setCollectedItems(prev => {
-            if (prev.includes(loc.accessoryId)) return prev;
+            const safe = prev || [];
+            if (safe.includes(markers.item_id)) return safe;
 
-            const updated = [...prev, loc.accessoryId];
 
             // Save to backend (if not in dev mode)
             if (!DEV_MODE) {
@@ -286,10 +289,10 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
               });
             }
 
-            return updated;
+            return [...safe, markers.item_id];
           });
 
-          setMessage(`🎉 You've collected the ${loc.title}!!`);
+          setTimeout(() => setMessage(`🎉 You've collected the ${loc.title}!!`), 2000);
         }
     });
   }, [pegmanPosition, collectedItems, userId]);
@@ -300,7 +303,10 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
     if(user?.is_admin){
       return; 
     }
-    
+
+    markers.forEach((marker) => {
+      console.log("MARKER:", marker);
+    });
     console.log("EFFECT RUNNING");
 
     console.log("liveLocation:", liveLocation);
@@ -325,7 +331,10 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
       console.log("DISTANCE:", dist);
 
       // Pickup radius based on user location
-      if (dist < 30 && !collectedIds.has(marker.id)){
+      if (dist < 100 && !collectedIds.has(marker.id)){
+
+        if (!marker.item_id) return;
+        
         console.log("AUTO COLLECT:", marker.name);
         
         handleCollect(marker);
@@ -618,7 +627,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
           // isDraggingPegman={isDraggingPegman}
         />
 
-        {/* Static Markers */}
+        {/* Static Markers
         {staticLocations
           .filter((loc) => !collectedItems.includes(loc.accessoryId)) // hide collected ones (uses global state)
           .map((loc) => (
@@ -654,7 +663,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
                 
               </Popup>
             </Marker>
-        ))}
+        ))} */}
 
         {/* Admin Added Markers */}
         {markers.map((loc, i) => (
