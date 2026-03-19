@@ -1,11 +1,15 @@
 require("dotenv").config();
+const SECRET = process.env.JWT_SECRET;
 
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
 const authMiddleware = require("./middleware/authMiddleware");
+const requireAdmin = require("./middleware/adminMiddleware");
 const bcrypt = require("bcrypt");
+
+console.log("JWT_SECRET:", process.env.JWT_SECRET);
 
 
 const app = express();
@@ -301,7 +305,8 @@ app.post("/auth/google", async(req, res) => {
         const appToken = jwt.sign(
             {
                 userId: user.id,
-                email: user.email
+                email: user.email,
+                is_admin: user.is_admin
             },
             process.env.JWT_SECRET, 
             {expiresIn: "7d"}
@@ -316,28 +321,31 @@ app.post("/auth/google", async(req, res) => {
 });
 
 // Ensure users with a valid JWT token can access the main app
-app.get("/me", (req, res) => {
+app.get("/me", authMiddleware, async (req, res) => {
   try {
 
-    const authHeader = req.headers.authorization;
+    console.log("req.user:", req.user);
+    
+    const userId = req.user.userId;
 
-    if (!authHeader) {
-      return res.status(401).json({ error: "Missing token" });
+    const result = await pool.query(
+      `
+      SELECT id, username, email, is_admin
+      FROM users
+      WHERE id = $1
+      `,
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
     }
 
-    const token = authHeader.split(" ")[1];
-
-    if (!token) {
-      return res.status(401).json({ error: "Invalid token" });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    res.json(decoded);
+    res.json(result.rows[0]);
 
   } catch (err) {
-    console.error("JWT error:", err);
-    res.status(401).json({ error: "Invalid token" });
+    console.error("Error fetching user:", err);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
@@ -369,10 +377,19 @@ app.get("/me/state", authMiddleware, async (req, res) => {
             [userId]
         );
 
+        const userResult = await pool.query(
+          `SELECT is_admin 
+          FROM users 
+          WHERE id = $1`,
+          [userId]
+        );
+
         res.json({
-            collectedItems: items.rows.map(r => r.item_id),
-            equipped: equipment.rows[0] || {},
-            markers: markers.rows
+          userId: userId,
+          is_admin: userResult.rows[0]?.is_admin || false,
+          collectedItems: items.rows.map(r => r.item_id),
+          equipped: equipment.rows[0] || {},
+          markers: markers.rows
         });
     }
     catch (err){
@@ -381,22 +398,38 @@ app.get("/me/state", authMiddleware, async (req, res) => {
     }
 });
 
+// Retrieve Item
+app.get("/items", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM items");
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Collect Item
 app.post("/items/collect", authMiddleware, async (req, res) => {
-    const userId = req.user.userId;
-    const {itemId} = req.body;
-
     try{
-        await pool.query(
-            `
-            INSERT INTO user_inventory (user_id, item_id)
-            VALUES ($1, $2)
-            ON CONFLICT (user_id, item_id) DO NOTHING
-            `,
-            [userId, itemId]
-        );
+      
+      // Restrict Admin from collecting items
+      if(req.user.is_admin){
+        return res.status(403).json({ error: "Admins cannot collect items"})
+      }
+      
+      const userId = req.user.userId;
+      const {itemId} = req.body;
 
-        res.json({ success: true });
+      await pool.query(
+          `
+          INSERT INTO user_inventory (user_id, item_id)
+          VALUES ($1, $2)
+          ON CONFLICT (user_id, item_id) DO NOTHING
+          `,
+          [userId, itemId]
+      );
+
+      res.json({ success: true });
     }
     catch (err){
         res.status(500).json({error: err.message})
@@ -433,25 +466,80 @@ app.put("/equip", authMiddleware, async (req, res) => {
 });
 
 // Save Marker
-app.post("/markers", authMiddleware, async (req, res) => {
-    const userId = req.user.userId;
-    const {latitude, longitude} = req.body;
+// app.post("/admin/markers", authMiddleware, requireAdmin, async (req, res) => {
+    
+//     const {latitude, longitude, item_id} = req.body;
 
-    try{
-        await pool.query(
-            `
-            INSERT INTO markers (user_id, latitude, longitude)
-            VALUES ($1, $2, $3)
-            `
-        ,
-        [userId, latitude, longitude]
+//     try{
+//         await pool.query(
+//             `
+//             INSERT INTO markers (latitude, longitude, item_id)
+//             VALUES ($1, $2, $3)
+//             `
+//         ,
+//         [latitude, longitude, item_id]
+//         );
+
+//         res.json({ success: true });
+//     }
+//     catch (err){
+//         res.status(500).json({error: err.message})
+//     }
+// });
+
+// Player fetch markers route
+app.get("/markers", authMiddleware, async (req, res) => {
+  try {
+
+    let query;
+    let params = [];
+
+    // ADMIN: see all markers
+    if (req.user.is_admin) {
+      query = `
+        SELECT 
+          markers.id,
+          markers.latitude,
+          markers.longitude,
+          markers.item_id,
+          items.name,
+          items.image,
+          items.description
+        FROM markers
+        LEFT JOIN items 
+        ON markers.item_id = items.item_id;
+      `;
+    } 
+    // NORMAL USER: hide collected
+    else {
+      query = `
+        SELECT 
+          markers.id,
+          markers.latitude,
+          markers.longitude,
+          markers.item_id,
+          items.name,
+          items.image,
+          items.description
+        FROM markers
+        LEFT JOIN items 
+        ON markers.item_id = items.item_id
+        WHERE markers.item_id NOT IN (
+          SELECT item_id 
+          FROM user_inventory 
+          WHERE user_id = $1
         );
+      `;
+      params = [req.user.userId];
+    }
 
-        res.json({ success: true });
-    }
-    catch (err){
-        res.status(500).json({error: err.message})
-    }
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error("MARKERS ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Register Route
@@ -514,11 +602,11 @@ app.post("/auth/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid password" });
     }
 
-    const token = jwt.sign(
-      { userId: user.id },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    const token = jwt.sign({
+      userId: user.id,
+      email: user.email,
+      is_admin: user.is_admin
+    }, SECRET);
 
     res.json({ token, user });
 
@@ -528,6 +616,22 @@ app.post("/auth/login", async (req, res) => {
   }
 });
 
+// Admin Route
+app.post("/markers", authMiddleware, requireAdmin, async (req, res) => {
+  const { lat, lng, item_id } = req.body;
+
+  console.log("ADMIN ADD MARKER: ", { lat, lng, item_id });
+
+  const result = await pool.query(
+    `INSERT INTO markers (user_id, latitude, longitude, item_id)
+    VALUES ($1, $2, $3, $4)
+    RETURNING *`,
+    [req.user.userId, lat, lng, item_id]
+  )
+
+  res.json(result.rows[0]);
+  console.log("USER:", req.user);
+});
 
 // Test route
 app.get("/health/db", async (_req, res) => {

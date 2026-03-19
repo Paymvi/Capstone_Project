@@ -1,5 +1,14 @@
 const API = "http://localhost:3000";
 
+export function authHeaders() {
+  const token = localStorage.getItem("token");
+
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`
+  };
+}
+
 // Login API
 export async function apiPasswordLogin(username, password) {
   const res = await fetch(`${API}/auth/login`, {
@@ -23,16 +32,13 @@ export async function apiPasswordLogin(username, password) {
 
 // Get user state
 export async function apiGetState() {
-  const token = localStorage.getItem("token");
-
   const res = await fetch(`${API}/me/state`, {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
+    method: "GET",
+    headers: authHeaders()
   });
 
   if (!res.ok) {
-    throw new Error("Failed to load state");
+    throw new Error("Failed to fetch state");
   }
 
   return res.json();
@@ -40,24 +46,21 @@ export async function apiGetState() {
 
 
 // Add marker
-export async function apiAddMarker(latitude, longitude) {
+export async function apiAddMarker(lat, lng, item_id) {
   const token = localStorage.getItem("token");
 
-  const res = await fetch(`${API}/markers`, {
+  const res = await fetch("http://localhost:3000/markers", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
-      latitude,
-      longitude
-    })
+      lat: lat,
+      lng: lng,
+      item_id: item_id, // 🔥 MUST BE HERE
+    }),
   });
-
-  if (!res.ok) {
-    throw new Error("Failed to add marker");
-  }
 
   return res.json();
 }
@@ -110,6 +113,11 @@ export async function apiSetCollected(itemId) {
   return res.json();
 }
 
+//Get items
+export async function apiGetItems() {
+  const res = await fetch("http://localhost:3000/items");
+  return res.json();
+}
 
 // Register API
 export async function apiRegister(username, password) {
@@ -153,4 +161,23 @@ export async function apiGoogleLogin(token) {
   }
 
   return data;
+}
+
+// Get Item Drop Markers
+export async function apiGetMarkers() {
+  const token = localStorage.getItem("token");
+    console.log("GET MARKERS TOKEN:", token);
+
+  const res = await fetch("http://localhost:3000/markers", {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  if(!res.ok){
+      console.log("GET MARKERS TOKEN:", token);
+    throw new Error("Failed to fetch markers");
+  }
+
+  return res.json();
 }

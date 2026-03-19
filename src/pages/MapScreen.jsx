@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import { useNavigate } from "react-router-dom";
 
-import { apiAddMarker} from "../api";
+import { apiAddMarker, apiGetMarkers, apiGetItems, apiGetState  } from "../api";
 import { apiSetCollected } from "../api";
 import ClickHandler from "../components/ClickHandler"
 
@@ -22,12 +22,121 @@ function RecenterMap({ position, shouldCenter }) {
   return null;
 }
 
-export default function MapScreen({ userId, collectedItems, setCollectedItems, markers, setMarkers })
+function AdminMarkerPlacer({ isAdmin, onAddMarker }) {
+  useMapEvents({
+    click(e) {
+      if (!isAdmin) return;
+
+      const { lat, lng } = e.latlng;
+      console.log("Admin placing marker:", lat, lng);
+
+      onAddMarker(lat, lng); 
+    }
+  });
+
+  return null;
+}
+
+// Get the distance in meters
+function getDistanceMeters(lat1, lng1, lat2, lng2){
+  const R = 6371000; // Earth radius in meters
+  const toRad = (deg) => (deg * Math.PI) / 180;
+
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+
+  const a = 
+    Math.sin(dLat / 2) ** 2 + 
+    Math.cos(toRad(lat1)) * 
+      Math.cos(toRad(lat2)) * 
+      Math.sin(dLng / 2) ** 2;
+
+  const c = 2 * Math.atan(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+}
+
+
+// function MapClickHandler({ isAdmin, onAddMarker }) {
+//   useMapEvents({
+//     click(e) {
+//       if (!isAdmin) return;
+
+//       const { lat, lng } = e.latlng;
+//       console.log("Clicked at:", lat, lng);
+
+//       onAddMarker(lat, lng);
+//     },
+//   });
+
+//   return null;
+// }
+
+export default function MapScreen({ user, userId, collectedItems, setCollectedItems })
 {
+
+  async function loadMarkers() {
+    try {
+      const data = await apiGetMarkers();
+
+      console.log("MARKER DATA:", data);
+
+      const formatted = data.map(m => ({
+        id: m.id,
+        latlng: [m.latitude, m.longitude],
+        name: m.name,
+        image: m.image,
+        description: m.description,
+        item_id: m.item_id, 
+        radius: 30,
+      }));
+
+      setMarkers(formatted);
+    } catch (err) {
+      console.error("Failed to load markers", err);
+    }
+  } 
+
+  // Handles the collection of item drops
+  async function handleCollect(marker) {
+    try{
+      console.log("COLLECTING: ", marker);
+
+      // Send to the backend 
+      await apiSetCollected(marker.item_id);
+
+      // instant UI
+      setCollectedItems(prev => {
+        const safe = prev || [];
+        if (safe.includes(marker.item_id)) return safe;
+        return [...safe, marker.item_id];
+      });
+
+      // Remove marker locally
+      setMarkers((prev) => prev.filter((m) => m.id !== marker.id));
+    
+    } 
+    catch (err){
+      console.error("Collect failed", err);
+    }
+  }
+
   const navigate = useNavigate();
   const [uiLocked, setUiLocked] = useState(false);
   const [message, setMessage] = useState(null);
-  //const [location, setLocations] = 
+  const [markers, setMarkers] = useState([]);
+  const [items, setItems] = useState([]);
+  const [selectedItem, setSelectedItem] = useState("");
+  const [collectedIds, setCollectedIds] = useState(new Set());
+
+  const blueMarker = new L.Icon({
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+  });
+
+  console.log("MAPSCREEN MARKERS PROP:", markers);
   
 
   // --------------------------------- Pegman ------------------------------
@@ -42,6 +151,7 @@ export default function MapScreen({ userId, collectedItems, setCollectedItems, m
   
   // const isDraggingPegman = useRef(false)
   const [locationError, setLocationError] = useState("");
+  const [liveLocation, setLiveLocation] = useState(null);
   const [locationLoading, setLocationLoading] = useState(true);
   const [hasCenteredOnce, setHasCenteredOnce] = useState(false);
 
@@ -121,6 +231,8 @@ export default function MapScreen({ userId, collectedItems, setCollectedItems, m
         const coords = [latitude, longitude];
 
         setPegmanPosition(coords);
+        setLiveLocation(coords);
+
         setLocationError("");
         setLocationLoading(false);
 
@@ -159,36 +271,89 @@ export default function MapScreen({ userId, collectedItems, setCollectedItems, m
   }, [hasCenteredOnce]);
 
   // This checks to see if you collected an item everytime the map rerenders
-  useEffect(() => {
-    staticLocations.forEach((loc) => {
+  // useEffect(() => {
+  //   staticLocations.forEach((loc) => {
       
-      // Skip if already collected (using global state)
-      if (collectedItems.includes(loc.accessoryId)) return;
+  //     // Skip if already collected (using global state)
+  //     if (collectedItems.includes(loc.accessoryId)) return;
 
-      const distance = L.latLng(pegmanPosition)
-        .distanceTo(L.latLng(loc.position));
+  //     const distance = L.latLng(pegmanPosition)
+  //       .distanceTo(L.latLng(loc.position));
 
-        if (distance <= loc.radius) {
-          setCollectedItems(prev => {
-            if (prev.includes(loc.accessoryId)) return prev;
+  //       if (distance <= loc.radius) {
+  //         setCollectedItems(prev => {
+  //           const safe = prev || [];
+  //           if (safe.includes(markers.item_id)) return safe;
 
-            const updated = [...prev, loc.accessoryId];
 
-            // Save to backend (if not in dev mode)
-            if (!DEV_MODE) {
-              apiSetCollected(loc.accessoryId).catch((err) => {
-                console.error("Failed to save collected item:", err);
-              });
-            }
+  //           // Save to backend (if not in dev mode)
+  //           if (!DEV_MODE) {
+  //             apiSetCollected(loc.accessoryId).catch((err) => {
+  //               console.error("Failed to save collected item:", err);
+  //             });
+  //           }
 
-            return updated;
-          });
+  //           return [...safe, markers.item_id];
+  //         });
 
-          setMessage(`🎉 You've collected the ${loc.title}!!`);
-        }
+  //         setTimeout(() => setMessage(`🎉 You've collected the ${loc.title}!!`), 2000);
+  //       }
+  //   });
+  // }, [pegmanPosition, collectedItems, userId]);
+
+  useEffect(() => {
+
+    // Block admin from collecting items
+    if(user?.is_admin){
+      return; 
+    }
+
+    markers.forEach((marker) => {
+      console.log("MARKER:", marker);
     });
-  }, [pegmanPosition, collectedItems, userId]);
+    console.log("EFFECT RUNNING");
 
+    console.log("liveLocation:", liveLocation);
+    console.log("markers:", markers);
+
+    if (!liveLocation || markers.length === 0) {
+      console.log("EXITING EARLY ❌");
+      return;
+    }
+
+    console.log("PASSED CHECK ✅");
+
+
+    markers.forEach((marker) => {
+      const dist = getDistanceMeters(
+        liveLocation[0],
+        liveLocation[1],
+        marker.latlng[0],
+        marker.latlng[1]
+      );
+
+      console.log("DISTANCE:", dist);
+
+      // Pickup radius based on user location
+      if (dist < 100 && !collectedIds.has(marker.id)){
+
+        if (!marker.item_id) return;
+        
+        console.log("AUTO COLLECT:", marker.name);
+        
+        handleCollect(marker);
+
+        setCollectedIds((prev) => {
+          const updated = new Set(prev);
+          updated.add(marker.id);
+          return updated;
+        });
+
+        setTimeout(() => setMessage(`🎉 You've collected the ${markers.name}!!`), 2000);
+      }
+    });
+  }, [liveLocation, markers, collectedIds]);
+  
   useEffect(() => {
     if (!message) return;
 
@@ -198,6 +363,21 @@ export default function MapScreen({ userId, collectedItems, setCollectedItems, m
 
     return () => clearTimeout(timer);
   }, [message]);
+
+  // Load items into the dropdown menu
+  useEffect(() => {
+    async function loadItems() {
+      try{
+        const data = await apiGetItems();
+        setItems(data);
+      }
+      catch(err){
+        console.error("Failed to load items", err);
+      }
+    }
+
+    loadItems();
+  }, []);
 
 
   // Audio for when you collect an item
@@ -209,6 +389,12 @@ export default function MapScreen({ userId, collectedItems, setCollectedItems, m
     audio.play();
 
   }, [message]);
+
+  // To load markers from the player view
+  useEffect(() => {
+    if (!userId) return;
+    loadMarkers();
+  }, [userId]);
 
 
   const [currentIcon, setCurrentIcon] = useState();
@@ -270,15 +456,15 @@ export default function MapScreen({ userId, collectedItems, setCollectedItems, m
     //   // loading: true
     // }
 
-    await apiAddMarker(latlng.lat, latlng.lng);
+    await apiAddMarker(latlng.lat, latlng.lng, selectedItem);
 
     // Add this information immediately to the map
-    setMarkers((prev) => [
-      ...prev,
-      {
-        latlng: [latlng.lat, latlng.lng]
-      }
-    ]);
+    // setMarkers((prev) => [
+    //   ...prev,
+    //   {
+    //     latlng: [latlng.lat, latlng.lng]
+    //   }
+    // ]);
 
 
     // Check Wi-Fi before making API calls (if there is none, have an error message)
@@ -327,6 +513,20 @@ export default function MapScreen({ userId, collectedItems, setCollectedItems, m
 
   };
 
+  async function handleAddMarker(lat, lng) {
+    try {
+      if (!selectedItem) {
+        alert("Select an item first!");
+        return;
+      }
+
+      await apiAddMarker(lat, lng, selectedItem);
+      await loadMarkers();
+    } catch (err) {
+      console.error("Failed to add marker", err);
+    }
+  }
+
   
   // Adds the edit and delete buttons next to the side bar elements
   const handleEdit = (id) => {
@@ -361,7 +561,38 @@ export default function MapScreen({ userId, collectedItems, setCollectedItems, m
             {locationError}
           </div>
         )}
+
+        {user?.is_admin && (
+          <div className="admin-banner">
+            🛠 Admin Mode: Click to place items
+          </div>
+        )}
         
+        {/* This is where the dropdown UI will be added */}
+        {user?.is_admin && (
+          <div style={{
+            position: "absolute",
+            top: "10px",
+            left: "10px",
+            zIndex: 1000,
+            background: "white",
+            padding: "8px",
+            borderRadius: "8px"
+          }}>
+            <select
+              value={selectedItem}
+              onChange={(e) => setSelectedItem(e.target.value)}
+            >
+              <option value="">Select Item</option>
+
+              {items.map(item => (
+                <option key={item.item_id} value={item.item_id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
     
         {/* This is where the map lives */}
         <MapContainer
@@ -380,6 +611,12 @@ export default function MapScreen({ userId, collectedItems, setCollectedItems, m
 
         />
 
+        {/* Admin Marker Placement */}
+        <AdminMarkerPlacer 
+          isAdmin={user?.is_admin}
+          onAddMarker={handleAddMarker} 
+        />
+
         {/* Pegman marker (with coordinate tracking) */}
         <Marker position={pegmanPosition} icon={pegmanIcon}>
           <Popup>
@@ -390,10 +627,11 @@ export default function MapScreen({ userId, collectedItems, setCollectedItems, m
         <ClickHandler 
           onMapClick={handleMapClick} 
           uiLocked={uiLocked} 
+          isAdmin={user?.is_admin}
           // isDraggingPegman={isDraggingPegman}
         />
 
-        {/* Static Markers */}
+        {/* Static Markers
         {staticLocations
           .filter((loc) => !collectedItems.includes(loc.accessoryId)) // hide collected ones (uses global state)
           .map((loc) => (
@@ -429,29 +667,37 @@ export default function MapScreen({ userId, collectedItems, setCollectedItems, m
                 
               </Popup>
             </Marker>
-        ))}
+        ))} */}
 
-        {/* User Added Markers */}
+        {/* Admin Added Markers */}
         {markers.map((loc, i) => (
-          <Marker key={i} position={loc.latlng} icon={currentIcon || personaIcon}>
+          <Marker key={`${i}-${user?.is_admin}`} position={loc.latlng} icon={user?.is_admin ? personaIcon : blueMarker}>
             
             <Popup className="custom-popup">
               <div className="popup-content">
-                <div className="title">{loc.info || "Saved Location"}</div>
-                
-                <div className="section">
-                  <div className="info">
-                    <span>Custom location marker</span>
+                <div className="title">{loc.name}</div>
+              </div>
+
+              <div className="section">
+                <div className="info">                
+                  <div style={{ textAlign: "center", marginTop: "8px" }}>
+                    <img
+                      src={loc.image}
+                      alt={loc.name}
+                      style={{ 
+                        width: "80px",
+                        marginLeft: "auto",
+                        marginRight: "auto"
+                      }}
+                    />
                   </div>
+
+                  <p style={{ fontSize: "12px", opacity: 0.8 }}>
+                    {loc.description}
+                  </p>
+
+                  <br></br>
                 </div>
-
-                {/* {loc.loading && (
-                  <div className="section">
-                    <div className="spinner" />
-                    <em>Loading...</em>
-                  </div>
-                )} */}
-
               </div>
             </Popup>
           </Marker>
