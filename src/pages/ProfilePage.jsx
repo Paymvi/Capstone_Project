@@ -1,6 +1,7 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import TAG_OPTIONS from "../utils/tags";
 import ReactCountryFlag from "react-country-flag";
+import { apiGetState  } from "../api";
 
 export default function ProfilePage({ userId, collectedItems }) {
 
@@ -10,6 +11,17 @@ export default function ProfilePage({ userId, collectedItems }) {
   const [displayName, setDisplayName] = useState("Demo User");
   const [tag, setTag] = useState(TAG_OPTIONS[0]);
   const [showEditProfile, setShowEditProfile] = useState(false);
+
+  useEffect(() => {
+    async function loadState() {
+      const data = await apiGetState();
+
+      // IMPORTANT: overwrite + dedupe
+      setCollectedItems([...new Set(data.inventory)]);
+    }
+
+    loadState();
+  }, []);
 
   function handleAvatarChange(e) {
     const file = e.target.files[0];
@@ -97,7 +109,7 @@ export default function ProfilePage({ userId, collectedItems }) {
           <div className="profile-stat-row">
             <div className="profile-stat">
               <div className="profile-stat-title">Total Items</div>
-              <div className="profile-stat-value">{collectedItems?.length || 0}</div>
+              <div className="profile-stat-value">{[...new Set(collectedItems || [])].length}</div>
             </div>
 
             <div className="profile-stat">

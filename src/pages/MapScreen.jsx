@@ -106,7 +106,11 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
       await apiSetCollected(marker.item_id);
 
       // instant UI
-      setCollectedItems(prev => [...prev, marker.item_id]);
+      setCollectedItems(prev => {
+        const safe = prev || [];
+        if (safe.includes(marker.item_id)) return safe;
+        return [...safe, marker.item_id];
+      });
 
       // Remove marker locally
       setMarkers((prev) => prev.filter((m) => m.id !== marker.id));
@@ -267,35 +271,35 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
   }, [hasCenteredOnce]);
 
   // This checks to see if you collected an item everytime the map rerenders
-  useEffect(() => {
-    staticLocations.forEach((loc) => {
+  // useEffect(() => {
+  //   staticLocations.forEach((loc) => {
       
-      // Skip if already collected (using global state)
-      if (collectedItems.includes(loc.accessoryId)) return;
+  //     // Skip if already collected (using global state)
+  //     if (collectedItems.includes(loc.accessoryId)) return;
 
-      const distance = L.latLng(pegmanPosition)
-        .distanceTo(L.latLng(loc.position));
+  //     const distance = L.latLng(pegmanPosition)
+  //       .distanceTo(L.latLng(loc.position));
 
-        if (distance <= loc.radius) {
-          setCollectedItems(prev => {
-            const safe = prev || [];
-            if (safe.includes(markers.item_id)) return safe;
+  //       if (distance <= loc.radius) {
+  //         setCollectedItems(prev => {
+  //           const safe = prev || [];
+  //           if (safe.includes(markers.item_id)) return safe;
 
 
-            // Save to backend (if not in dev mode)
-            if (!DEV_MODE) {
-              apiSetCollected(loc.accessoryId).catch((err) => {
-                console.error("Failed to save collected item:", err);
-              });
-            }
+  //           // Save to backend (if not in dev mode)
+  //           if (!DEV_MODE) {
+  //             apiSetCollected(loc.accessoryId).catch((err) => {
+  //               console.error("Failed to save collected item:", err);
+  //             });
+  //           }
 
-            return [...safe, markers.item_id];
-          });
+  //           return [...safe, markers.item_id];
+  //         });
 
-          setTimeout(() => setMessage(`🎉 You've collected the ${loc.title}!!`), 2000);
-        }
-    });
-  }, [pegmanPosition, collectedItems, userId]);
+  //         setTimeout(() => setMessage(`🎉 You've collected the ${loc.title}!!`), 2000);
+  //       }
+  //   });
+  // }, [pegmanPosition, collectedItems, userId]);
 
   useEffect(() => {
 
@@ -345,7 +349,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
           return updated;
         });
 
-        setMessage(`🎉 You've collected the ${marker.name}!!`);
+        setTimeout(() => setMessage(`🎉 You've collected the ${markers.name}!!`), 2000);
       }
     });
   }, [liveLocation, markers, collectedIds]);
