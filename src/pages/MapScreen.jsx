@@ -37,6 +37,25 @@ function AdminMarkerPlacer({ isAdmin, onAddMarker }) {
   return null;
 }
 
+// Get the distance in meters
+function getDistanceMeters(lat1, lng1, lat2, lng2){
+  const R = 6371000; // Earth radius in meters
+  const toRad = (deg) => (deg * Math.PI) / 180;
+
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+
+  const a = 
+    Math.sin(dLat / 2) ** 2 + 
+    Math.cos(toRad(lat1)) * 
+      Math.cos(toRad(lat2)) * 
+      Math.sin(dLng / 2) ** 2;
+
+  const c = 2 * Math.atan(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+}
+
 
 // function MapClickHandler({ isAdmin, onAddMarker }) {
 //   useMapEvents({
@@ -77,12 +96,30 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
     }
   } 
 
+  // Handles the collection of item drops
+  async function handleCollect(marker) {
+    try{
+      console.log("COLLECTING: ", marker);
+
+      // Send to the backend 
+      await apiSetCollected(marker.item_id);
+
+      // Remove marker locally
+      setMarkers((prev) => prev.filter((m) => m.id !== marker.id));
+    
+    } 
+    catch (err){
+      console.error("Collect failed", err);
+    }
+  }
+
   const navigate = useNavigate();
   const [uiLocked, setUiLocked] = useState(false);
   const [message, setMessage] = useState(null);
   const [markers, setMarkers] = useState([]);
   const [items, setItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState("");
+  const [collectedIds, setCollectedIds] = useState(new Set());
 
   const blueMarker = new L.Icon({
     iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -106,6 +143,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
   
   // const isDraggingPegman = useRef(false)
   const [locationError, setLocationError] = useState("");
+  const [liveLocation, setLiveLocation] = useState(null);
   const [locationLoading, setLocationLoading] = useState(true);
   const [hasCenteredOnce, setHasCenteredOnce] = useState(false);
 
@@ -185,6 +223,8 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
         const coords = [latitude, longitude];
 
         setPegmanPosition(coords);
+        setLiveLocation(coords);
+
         setLocationError("");
         setLocationLoading(false);
 
@@ -253,6 +293,48 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
     });
   }, [pegmanPosition, collectedItems, userId]);
 
+  useEffect(() => {
+
+    console.log("EFFECT RUNNING");
+
+    console.log("liveLocation:", liveLocation);
+    console.log("markers:", markers);
+
+    if (!liveLocation || markers.length === 0) {
+      console.log("EXITING EARLY ❌");
+      return;
+    }
+
+    console.log("PASSED CHECK ✅");
+
+
+    markers.forEach((marker) => {
+      const dist = getDistanceMeters(
+        liveLocation[0],
+        liveLocation[1],
+        marker.latlng[0],
+        marker.latlng[1]
+      );
+
+      console.log("DISTANCE:", dist);
+
+      // Pickup radius based on user location
+      if (dist < 150 && !collectedIds.has(marker.id)){
+        console.log("AUTO COLLECT:", marker.name);
+        
+        handleCollect(marker);
+
+        setCollectedIds((prev) => {
+          const updated = new Set(prev);
+          updated.add(marker.id);
+          return updated;
+        });
+
+        setMessage(`🎉 You've collected the ${marker.name}!!`);
+      }
+    });
+  }, [liveLocation, markers, collectedIds]);
+  
   useEffect(() => {
     if (!message) return;
 
