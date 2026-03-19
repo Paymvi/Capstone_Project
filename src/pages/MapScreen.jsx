@@ -296,6 +296,11 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
 
   useEffect(() => {
 
+    // Block admin from collecting items
+    if(user?.is_admin){
+      return; 
+    }
+    
     console.log("EFFECT RUNNING");
 
     console.log("liveLocation:", liveLocation);

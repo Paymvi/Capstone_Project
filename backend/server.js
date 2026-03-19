@@ -410,20 +410,26 @@ app.get("/items", async (req, res) => {
 
 // Collect Item
 app.post("/items/collect", authMiddleware, async (req, res) => {
-    const userId = req.user.userId;
-    const {itemId} = req.body;
-
     try{
-        await pool.query(
-            `
-            INSERT INTO user_inventory (user_id, item_id)
-            VALUES ($1, $2)
-            ON CONFLICT (user_id, item_id) DO NOTHING
-            `,
-            [userId, itemId]
-        );
+      
+      // Restrict Admin from collecting items
+      if(req.user.is_admin){
+        return res.status(403).json({ error: "Admins cannot collect items"})
+      }
+      
+      const userId = req.user.userId;
+      const {itemId} = req.body;
 
-        res.json({ success: true });
+      await pool.query(
+          `
+          INSERT INTO user_inventory (user_id, item_id)
+          VALUES ($1, $2)
+          ON CONFLICT (user_id, item_id) DO NOTHING
+          `,
+          [userId, itemId]
+      );
+
+      res.json({ success: true });
     }
     catch (err){
         res.status(500).json({error: err.message})
@@ -484,24 +490,54 @@ app.put("/equip", authMiddleware, async (req, res) => {
 // Player fetch markers route
 app.get("/markers", authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT 
-        markers.id,
-        markers.latitude,
-        markers.longitude,
-        markers.item_id,
-        items.name,
-        items.image, 
-        items.description
-      FROM markers
-      LEFT JOIN items 
-      ON markers.item_id = items.item_id;
-    `);
 
+    let query;
+    let params = [];
+
+    // ADMIN: see all markers
+    if (req.user.is_admin) {
+      query = `
+        SELECT 
+          markers.id,
+          markers.latitude,
+          markers.longitude,
+          markers.item_id,
+          items.name,
+          items.image,
+          items.description
+        FROM markers
+        LEFT JOIN items 
+        ON markers.item_id = items.item_id;
+      `;
+    } 
+    // NORMAL USER: hide collected
+    else {
+      query = `
+        SELECT 
+          markers.id,
+          markers.latitude,
+          markers.longitude,
+          markers.item_id,
+          items.name,
+          items.image,
+          items.description
+        FROM markers
+        LEFT JOIN items 
+        ON markers.item_id = items.item_id
+        WHERE markers.item_id NOT IN (
+          SELECT item_id 
+          FROM user_inventory 
+          WHERE user_id = $1
+        );
+      `;
+      params = [req.user.userId];
+    }
+
+    const result = await pool.query(query, params);
     res.json(result.rows);
 
   } catch (err) {
-    console.error("MARKERS ERROR:", err); // Debug message
+    console.error("MARKERS ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 });
