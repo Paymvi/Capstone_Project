@@ -1,3 +1,9 @@
+DROP TABLE IF EXISTS user_equipment CASCADE;
+DROP TABLE IF EXISTS user_inventory CASCADE;
+DROP TABLE IF EXISTS markers CASCADE;
+DROP TABLE IF EXISTS items CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   username VARCHAR(255),
@@ -13,13 +19,14 @@ CREATE TABLE items (
 	item_id VARCHAR(255) UNIQUE NOT NULL,
 	name VARCHAR(255),
 	type VARCHAR(50),
-	image VARCHAR(255)
+	image VARCHAR(255),
+	description TEXT
 );
 
 CREATE TABLE user_inventory (
 	id SERIAL PRIMARY KEY,
 	user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-	item_id VARCHAR(255) NOT NULL,
+	item_id VARCHAR(255) REFERENCES items(item_id),
 	collected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	UNIQUE(user_id, item_id)
 );
@@ -28,7 +35,7 @@ CREATE TABLE markers (
 	id SERIAL PRIMARY KEY,
 	latitude FLOAT NOT NULL,
 	longitude FLOAT NOT NULL,
-	item_id VARCHAR(255) REFERENCES items(item_id),
+	item_id VARCHAR(255) REFERENCES items(item_id) ON DELETE CASCADE,
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -45,7 +52,7 @@ ON user_inventory(user_id);
 
 -- Seed default collectible items
 
-INSERT INTO items (item_id, name, type, image) VALUES
+INSERT INTO items (item_id, name, type, image, description) VALUES
 ('hat_crown', 'Crown', 'hat', '/Roamie-Crown-2.png', 'Collect your crown at the library!'),
 ('hat_santahat', 'Santa Hat', 'hat', '/Roamie-SantaHat.png', 'Santa hat drop!!!'),
 ('hat_flower', 'Flower', 'hat', '/Roamie-Flower.png', 'Flower Power Drop!!!'),
