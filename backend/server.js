@@ -81,10 +81,6 @@ app.get("/users", async (req, res) => {
 app.post("/auth/google", async (req, res) => {
   const { token } = req.body;
 
-    console.log("BACKEND CLIENT ID:", process.env.GOOGLE_CLIENT_ID);
-    console.log("=== AUTH REQUEST RECEIVED ===");
-    console.log("Token:", token);
-
   try {
     const ticket = await client.verifyIdToken({
       idToken: token,
@@ -94,22 +90,9 @@ app.post("/auth/google", async (req, res) => {
     const payload = ticket.getPayload();
     const { sub, email, name } = payload;
 
-        //Admin logic
-        const ADMIN_EMAILS = [
-          "quark.labs25@gmail.com"
-        ];
-
-        const isAdmin = ADMIN_EMAILS.includes(email);
-
-        //Admin logic
-        const ADMIN_EMAILS = [
-          "quark.labs25@gmail.com"
-        ];
-
-        const isAdmin = ADMIN_EMAILS.includes(email);
-
-        console.log("Incoming token:", token);
-        console.log("Payload:", payload);
+    //Admin logic
+    const ADMIN_EMAILS = ["quark.labs25@gmail.com"];
+    const isAdmin = ADMIN_EMAILS.includes(email);
 
     // Check if a user exists
     let result = await pool.query(
@@ -122,110 +105,65 @@ app.post("/auth/google", async (req, res) => {
     if (result.rows.length > 0) {
       user = result.rows[0];
     } else {
-      result = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+      // Check if user exists by email
+      result = await pool.query(
+        "SELECT * FROM users WHERE email = $1",
+        [email]
+      );
 
       if (result.rows.length > 0) {
+        // Update existing user
         const updated = await pool.query(
           `
           UPDATE users
-          SET google_sub = $1, name = COALESCE(name, $2)
-          WHERE email = $3
+          SET google_sub = $1,
+              name = COALESCE(name, $2),
+              is_admin = $3
+          WHERE email = $4
           RETURNING *
           `,
-          [sub, name, email]
+          [sub, name, isAdmin, email]
         );
 
-        let user;
-
-
-        if (result.rows.length > 0){
-          const updated = await pool.query(
-              `
-              UPDATE users
-              SET name = COALESCE(name, $2),
-                  is_admin = $3
-              WHERE google_sub = $1
-              RETURNING *
-              `,
-              [sub, name, isAdmin]
-          );
-
-            user = updated.rows[0];
-        }
-        else{
-            result = await pool.query(
-                "SELECT * FROM users WHERE email = $1",
-                [email]
-            );
-            
-            if (result.rows.length > 0){
-                const updated = await pool.query(
-                    `
-                    UPDATE users
-                    SET google_sub = $1, name = COALESCE(name, $2)
-                    WHERE email = $3
-                    RETURNING *
-                    `,
-                    [sub, name, email]
-                );
-                
-                user = updated.rows[0];
-            }
-            else{
-                const newUser = await pool.query(
-                    `
-                    INSERT INTO users (google_sub, email, name, is_admin)
-                    VALUES ($1, $2, $3, $4)
-                    RETURNING *
-                    `,
-                    [sub, email, name, isAdmin]
-                );
-
-                user = newUser.rows[0];
-
-                // Create equipment row upon user creation
-                await pool.query(
-                  `
-                  INSERT INTO user_equipment (user_id)
-                  VALUES ($1)
-                  ON CONFLICT (user_id) DO NOTHING
-                  `,
-                  [user.id]
-                );
-
-            }
-        }
-
-        // Issue your own JWT
-        const appToken = jwt.sign(
-            {
-                userId: user.id,
-                email: user.email,
-                is_admin: user.is_admin
-            },
-            process.env.JWT_SECRET, 
-            {expiresIn: "7d"}
+        user = updated.rows[0];
+      } else {
+        // Create new user
+        const newUser = await pool.query(
+          `
+          INSERT INTO users (google_sub, email, name, is_admin)
+          VALUES ($1, $2, $3, $4)
+          RETURNING *
+          `,
+          [sub, email, name, isAdmin]
         );
 
-        res.json({ token: appToken, user });
-    }
-    catch(err){
-        console.error(err);
-        res.status(500).json({error: err.message});
+        user = newUser.rows[0];
+
+        // Create equipment row
+        await pool.query(
+          `
+          INSERT INTO user_equipment (user_id)
+          VALUES ($1)
+          ON CONFLICT (user_id) DO NOTHING
+          `,
+          [user.id]
+        );
+      }
     }
 
-    // Issue your own JWT
+    // Issue JWT
     const appToken = jwt.sign(
       {
         userId: user.id,
         email: user.email,
-        is_admin: false,
+        is_admin: user.is_admin,
       },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
     res.json({ token: appToken, user });
+
   } catch (err) {
     console.error(err);
     res.status(401).json({ error: "Invalid Google token" });
