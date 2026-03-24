@@ -8,10 +8,10 @@ services:
       POSTGRES_PASSWORD: roamie_pass
       POSTGRES_DB: roamie
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - roamie_db_data:/var/lib/postgresql/data
-      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - ./db:/docker-entrypoint-initdb.d/
 
 volumes:
   roamie_db_data:

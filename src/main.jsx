@@ -12,5 +12,4 @@ createRoot(document.getElementById('root')).render(
         <App />
       </BrowserRouter>
     </GoogleOAuthProvider>
-
 )
