@@ -9,6 +9,7 @@ const authMiddleware = require("./middleware/authMiddleware");
 const requireAdmin = require("./middleware/adminMiddleware");
 const bcrypt = require("bcrypt");
 
+console.log("DATABASE_URL:", process.env.DATABASE_URL);
 console.log("JWT_SECRET:", process.env.JWT_SECRET);
 
 const app = express();
@@ -23,151 +24,7 @@ app.use((req, res, next) => {
 // This file is your "database"
 const DB_PATH = path.join(__dirname, "db.json");
 
-// ---------- helper functions ----------
-function readDB() {
-  if (!fs.existsSync(DB_PATH)) {
-    const initial = { nextUserId: 1, users: [] };
-    fs.writeFileSync(DB_PATH, JSON.stringify(initial, null, 2), "utf-8");
-    return initial;
-  }
-  const raw = fs.readFileSync(DB_PATH, "utf-8");
-  return JSON.parse(raw);
-}
-
-function writeDB(db) {
-  fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2), "utf-8");
-}
-
 // ---------- routes ----------
-
-// LOGIN (create or get user)
-// body: { username: "quark" }
-// returns: { id, username }
-app.post("/login", (req, res) => {
-  const { username } = req.body;
-
-  if (!username || !username.trim()) {
-    return res.status(400).json({ message: "Username required" });
-  }
-
-  const clean = username.trim().toLowerCase();
-  const db = readDB();
-
-  let user = db.users.find((u) => u.username === clean);
-
-  if (!user) {
-    user = {
-      id: db.nextUserId++,
-      username: clean,
-      markers: [],
-      collectedItems: [],
-      equipped: {
-        hat: null,
-        body: null,
-        outside: null,
-      },
-    };
-    db.users.push(user);
-    writeDB(db);
-  }
-
-  res.json({
-    id: user.id,
-    username: user.username,
-    markers: user.markers,
-    collectedItems: user.collectedItems || [],
-    equipped: user.equipped,
-  });
-});
-
-// GET USER STATE
-// GET /state/1
-// returns: { markers: [...], equipped: {...} }
-app.get("/state/:userId", (req, res) => {
-  const userId = Number(req.params.userId);
-  const db = readDB();
-  const user = db.users.find((u) => u.id === userId);
-
-  if (!user) return res.status(404).json({ message: "User not found" });
-
-  res.json({
-    id: user.id,
-    username: user.username,
-    markers: user.markers,
-    collectedItems: user.collectedItems || [],
-    equipped: user.equipped,
-  });
-});
-
-// ADD MARKER
-// body: { userId: 1, latitude: 40.1, longitude: -73.9 }
-// app.post("/markers", (req, res) => {
-//   const { userId, latitude, longitude } = req.body;
-//   const db = readDB();
-//   const user = db.users.find((u) => u.id === Number(userId));
-
-//   if (!user) return res.status(404).json({ message: "User not found" });
-
-//   const marker = {
-//     id: Date.now(), // simple unique id for demo
-//     latitude: Number(latitude),
-//     longitude: Number(longitude),
-//   };
-
-//   user.markers.push(marker);
-//   writeDB(db);
-
-//   res.json(marker);
-// });
-
-// UPDATE EQUIPPED
-// body: { userId: 1, hat: "hat_crown", body: null, outside: "shield" }
-// app.put("/equip", (req, res) => {
-//   const { userId, hat, body, outside } = req.body;
-//   const db = readDB();
-//   const user = db.users.find((u) => u.id === Number(userId));
-
-//   if (!user) return res.status(404).json({ message: "User not found" });
-
-//   user.equipped = {
-//     hat: hat ?? null,
-//     body: body ?? null,
-//     outside: outside ?? null,
-//   };
-
-//   writeDB(db);
-//   res.json({ message: "Equipped updated", equipped: user.equipped });
-// });
-
-// (Optional) CLEAR MARKERS for demo reset
-// body: { userId: 1 }
-app.post("/markers/clear", (req, res) => {
-  const { userId } = req.body;
-  const db = readDB();
-  const user = db.users.find((u) => u.id === Number(userId));
-  if (!user) return res.status(404).json({ message: "User not found" });
-
-  user.markers = [];
-  writeDB(db);
-  res.json({ message: "Markers cleared" });
-});
-
-// UPDATE COLLECTED ITEMS
-// body: { userId: 1, collectedItems: ["hat_crown"] }
-app.put("/collected", (req, res) => {
-  const { userId, collectedItems } = req.body;
-
-  const db = readDB();
-  const user = db.users.find((u) => u.id === Number(userId));
-
-  if (!user) return res.status(404).json({ message: "User not found" });
-
-  user.collectedItems = collectedItems || [];
-
-  writeDB(db);
-
-  res.json({ message: "Collected items updated" });
-});
 
 console.log("DATABASE_URL:", process.env.DATABASE_URL);
 
@@ -224,9 +81,9 @@ app.get("/users", async (req, res) => {
 app.post("/auth/google", async (req, res) => {
   const { token } = req.body;
 
-  console.log("=== AUTH REQUEST RECEIVED ===");
-  console.log("Token:", token);
-  console.log("GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID);
+    console.log("BACKEND CLIENT ID:", process.env.GOOGLE_CLIENT_ID);
+    console.log("=== AUTH REQUEST RECEIVED ===");
+    console.log("Token:", token);
 
   try {
     const ticket = await client.verifyIdToken({
@@ -237,8 +94,15 @@ app.post("/auth/google", async (req, res) => {
     const payload = ticket.getPayload();
     const { sub, email, name } = payload;
 
-    console.log("Incoming token:", token);
-    console.log("Payload:", payload);
+        //Admin logic
+        const ADMIN_EMAILS = [
+          "quark.labs25@gmail.com"
+        ];
+
+        const isAdmin = ADMIN_EMAILS.includes(email);
+
+        console.log("Incoming token:", token);
+        console.log("Payload:", payload);
 
     // Check if a user exists
     let result = await pool.query(
@@ -264,28 +128,83 @@ app.post("/auth/google", async (req, res) => {
           [sub, name, email]
         );
 
-        user = updated.rows[0];
-      } else {
-        const newUser = await pool.query(
-          `
-          INSERT INTO users (google_sub, email, name) 
-          VALUES ($1, $2, $3) 
-          RETURNING *
-          `,
-          [sub, email, name]
+        let user;
+
+
+        if (result.rows.length > 0){
+          const updated = await pool.query(
+              `
+              UPDATE users
+              SET name = COALESCE(name, $2),
+                  is_admin = $3
+              WHERE google_sub = $1
+              RETURNING *
+              `,
+              [sub, name, isAdmin]
+          );
+
+            user = updated.rows[0];
+        }
+        else{
+            result = await pool.query(
+                "SELECT * FROM users WHERE email = $1",
+                [email]
+            );
+            
+            if (result.rows.length > 0){
+                const updated = await pool.query(
+                    `
+                    UPDATE users
+                    SET google_sub = $1, name = COALESCE(name, $2)
+                    WHERE email = $3
+                    RETURNING *
+                    `,
+                    [sub, name, email]
+                );
+                
+                user = updated.rows[0];
+            }
+            else{
+                const newUser = await pool.query(
+                    `
+                    INSERT INTO users (google_sub, email, name, is_admin)
+                    VALUES ($1, $2, $3, $4)
+                    RETURNING *
+                    `,
+                    [sub, email, name, isAdmin]
+                );
+
+                user = newUser.rows[0];
+
+                // Create equipment row upon user creation
+                await pool.query(
+                  `
+                  INSERT INTO user_equipment (user_id)
+                  VALUES ($1)
+                  ON CONFLICT (user_id) DO NOTHING
+                  `,
+                  [user.id]
+                );
+
+            }
+        }
+
+        // Issue your own JWT
+        const appToken = jwt.sign(
+            {
+                userId: user.id,
+                email: user.email,
+                is_admin: user.is_admin
+            },
+            process.env.JWT_SECRET, 
+            {expiresIn: "7d"}
         );
 
-        user = newUser.rows[0];
-
-        // Create equipment row upon user creation
-        await pool.query(
-          `
-          INSERT INTO user_equipment (user_id)
-          VALUES ($1)
-          `,
-          [user.id]
-        );
-      }
+        res.json({ token: appToken, user });
+    }
+    catch(err){
+        console.error(err);
+        res.status(500).json({error: err.message});
     }
 
     // Issue your own JWT
@@ -341,10 +260,19 @@ app.get("/me/state", authMiddleware, async (req, res) => {
   const userId = req.user.userId;
 
   try {
+    console.log("STATE userId:", userId);
+
+    const userResult = await pool.query(
+      `SELECT is_admin FROM users WHERE id = $1`,
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
     const items = await pool.query(
-      `SELECT item_id 
-       FROM user_inventory
-       WHERE user_id = $1`,
+      `SELECT item_id FROM user_inventory WHERE user_id = $1`,
       [userId]
     );
 
@@ -357,17 +285,17 @@ app.get("/me/state", authMiddleware, async (req, res) => {
     );
 
     const markers = await pool.query(
-      `SELECT latitude, longitude, item_id
-       FROM markers`
+      `SELECT latitude, longitude FROM markers`
     );
 
     res.json({
-      userId: userId,
-      is_admin: req.user.is_admin ?? false,
-      collectedItems: items.rows.map((r) => r.item_id),
+      userId,
+      is_admin: userResult.rows[0].is_admin,
+      collectedItems: items.rows.map(r => r.item_id),
       equipped: equipment.rows[0] || {},
-      markers: markers.rows,
+      markers: markers.rows
     });
+
   } catch (err) {
     console.error("STATE ERROR:", err);
     res.status(500).json({ error: err.message });
@@ -631,4 +559,15 @@ app.get("/tables", async (req, res) => {
   `);
 
   res.json(result.rows);
+});
+
+// Test the data base route
+app.get("/test-db", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT NOW()");
+    res.json(result.rows);
+  } catch (err) {
+    console.error("DB TEST ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
