@@ -101,6 +101,13 @@ app.post("/auth/google", async (req, res) => {
 
         const isAdmin = ADMIN_EMAILS.includes(email);
 
+        //Admin logic
+        const ADMIN_EMAILS = [
+          "quark.labs25@gmail.com"
+        ];
+
+        const isAdmin = ADMIN_EMAILS.includes(email);
+
         console.log("Incoming token:", token);
         console.log("Payload:", payload);
 
