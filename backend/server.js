@@ -1,3 +1,5 @@
+import { loginSchema } from "../validation/authSchema.js";
+
 require("dotenv").config();
 const SECRET = process.env.JWT_SECRET;
 
@@ -429,9 +431,12 @@ app.post("/auth/register", async (req, res) => {
 
 // Login Route
 app.post("/auth/login", async (req, res) => {
-  const { username, password } = req.body;
-
   try {
+    // Validate input before doing anything else
+    const parsed = loginSchema.parse(req.body);
+
+    const { username, password } = req.body;
+
     const result = await pool.query("SELECT * FROM users WHERE username = $1", [
       username,
     ]);
@@ -459,6 +464,11 @@ app.post("/auth/login", async (req, res) => {
 
     res.json({ token, user });
   } catch (err) {
+    // Zod validation errors
+    if(err.name === "ZodError"){
+      return res.status(400).json({ error: "Invalid input format" });
+    }
+
     console.error(err);
     res.status(500).json({ error: err.message });
   }
