@@ -13,5 +13,20 @@ services:
       - roamie_db_data:/var/lib/postgresql/data
       - ./db:/docker-entrypoint-initdb.d/
 
+  # Insecure database
+  insecure_db:   
+    image: postgres:15
+    container_name: roamie_insecure_db
+    restart: always
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_USER: insecure_user
+      POSTGRES_PASSWORD: insecure_pass
+      POSTGRES_DB: roamie_insecure
+    volumes:
+      - roamie_insecure_data:/var/lib/postgresql/data
+
 volumes:
   roamie_db_data:
+  roamie_insecure_data:

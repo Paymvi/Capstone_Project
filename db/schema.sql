@@ -10,7 +10,7 @@ CREATE TABLE users (
 	email VARCHAR(255),
 	google_sub VARCHAR(255),
 	name VARCHAR(255),
-	password_hash VARCHAR(255),
+	password VARCHAR(255),
 	is_admin BOOLEAN DEFAULT FALSE,
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
