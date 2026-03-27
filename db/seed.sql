@@ -6,6 +6,7 @@ INSERT INTO items (item_id, name, type, image, description) VALUES
 ('body_coat', 'Coat', 'body', '/Roamie-Coat-2.png', 'Stay warm and collect this fluffy coat!!!'),
 ('outside_shield', 'Shield', 'outside', '/Roamie-Shield-2.png', 'Collect this Shiny Shield!!!'),
 ('outside_dumbbell', 'Dumbbell', 'outside', '/Roamie-Dumbbell-2.png', 'Collect this limited edition dumbbell!')
+('outside_pizza', 'Pizza', 'outside', '/Roamie-Pizza.png', 'Collect this delicious slice!')
 ON CONFLICT (item_id) DO NOTHING;
 
 

@@ -55,6 +55,12 @@ export default function SecondScreen({ userId, collectedItems, equipped, setEqui
       src: "/Roamie-Dumbbell-2.png",
       position: { bottom: "5%", height: "75px", left: "65%"}
     },
+    {
+      id: "outside_pizza",
+      type: "outside",
+      name: "Pizza",
+      src: "/Roamie-Pizza.png",
+    }
     
   ];
 
