@@ -369,6 +369,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
     async function loadItems() {
       try{
         const data = await apiGetItems();
+        console.log("ITEMS:", data);
         setItems(data);
       }
       catch(err){

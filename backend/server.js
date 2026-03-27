@@ -12,6 +12,8 @@ const bcrypt = require("bcrypt");
 console.log("DATABASE_URL:", process.env.DATABASE_URL);
 console.log("JWT_SECRET:", process.env.JWT_SECRET);
 
+console.log("🚀 SERVER FILE STARTED");
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -36,7 +38,7 @@ const jwt = require("jsonwebtoken");
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 app.get("/", (req, res) => {
   res.send("Roamie is running on port 3000 🔥");
@@ -492,9 +494,6 @@ app.get("/health/db", async (_req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on: http://localhost:${PORT}`);
-});
 
 app.get("/tables", async (req, res) => {
   const result = await pool.query(`
@@ -516,3 +515,22 @@ app.get("/test-db", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+
+app.get("/items", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM items");
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching items:", err);
+    res.status(500).json({ error: "Failed to fetch items" });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`✅ Server running on http://localhost:${PORT}`);
+}).on("error", (err) => {
+  console.error("🔥 SERVER FAILED TO START:", err);
+});
+
+console.log("✅ END OF FILE REACHED");
