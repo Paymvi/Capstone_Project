@@ -68,8 +68,7 @@ export default function Login({ onLoggedIn }) {
       {/* LEFT SIDE */}
       <div className="login-left">
         <div className="left-content">
-          <h1 className="logo">Welcome to Roamie!</h1>
-          <h2>Roam together</h2>
+          
         </div>
       </div>
 

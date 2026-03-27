@@ -9,11 +9,15 @@
 
 .login-left {
   flex: 1;
-  background: linear-gradient(135deg,#2b5cff,#0d1f63);
+  background-image: url("/login-6.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .left-content {
