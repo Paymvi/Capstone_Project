@@ -136,7 +136,7 @@ http://localhost:3000
 
 ### Entering Roamie
 15. Now that both: 
-    * Once both are running::
+    * Once both are running:
 
         * ✅ Client (npm run dev)
         * ✅ Server (node server.js)
