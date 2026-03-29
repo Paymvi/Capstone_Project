@@ -24,5 +24,7 @@ dist-ssr
 *.sw?
 
 backend/.env
+backend/.env.insecure
+backend/.env.secure
 
 .env
