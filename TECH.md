@@ -59,6 +59,7 @@ Roamie uses a relational database powered by PostgreSQL to store and manage appl
 ### Core Tables
 
 > users
+
 Stores user account information.
 | Column        | Type    | Description              |
 | ------------- | ------- | ------------------------ |
@@ -69,6 +70,7 @@ Stores user account information.
 | is_admin      | BOOLEAN | Admin privilege flag     |
 
 > items
+
 Stores all collectible items in the game.
 | Column      | Type   | Description                         |
 | ----------- | ------ | ----------------------------------- |
@@ -79,6 +81,7 @@ Stores all collectible items in the game.
 | image_url   | TEXT   | Asset path for rendering            |
 
 > markers
+
 Represents item drop locations on the map. 
 | Column  | Type   | Description            |
 | ------- | ------ | ---------------------- |
@@ -88,6 +91,7 @@ Represents item drop locations on the map.
 | lng     | FLOAT  | Longitude              |
 
 > user_inventory
+
 Tracks which items a user has collected.
 | Column  | Type | Description            |
 | ------- | ---- | ---------------------- |
@@ -98,6 +102,7 @@ Tracks which items a user has collected.
 * (user_id, item_id) is unique → prevents duplicate collection
 
 > user_equipment 
+
 Stores currently equipped items per user. 
 | Column  | Type | Description           |
 | ------- | ---- | --------------------- |
