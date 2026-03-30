@@ -1,4 +1,5 @@
 import { loginSchema } from "../validation/authSchema.js";
+import { registerSchema } from "./validation/authSchemas.js";
 
 require("dotenv").config();
 const SECRET = process.env.JWT_SECRET;
@@ -388,36 +389,56 @@ app.get("/markers", authMiddleware, async (req, res) => {
 
 // Register Route
 app.post("/auth/register", async (req, res) => {
-  const { username, password } = req.body;
+  let transactionStarted = false; 
 
   try {
+
+    // Validate input before doing anything else
+    const result = registerSchema.safeParse(req.body);
+
+    if(!result.success){
+      return res.status(400).json({ error: "Invalid input format" });
+    }
+
+    // Normalize input
+    const username = result.data.username.toLowerCase().trim();
+    const { password } = result.data;
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const result = await pool.query(
+    // Start transaction
+    await pool.query("BEGIN");
+    transactionStarted = true;
+
+    const dbResult = await pool.query(
       `INSERT INTO users (username, password_hash)
        VALUES ($1, $2)
-       RETURNING id, username`,
+       RETURNING id, username, is_admin`,
       [username, hashedPassword]
     );
 
-    const user = result.rows[0];
-
+    const user = dbResult.rows[0];
+    
     await pool.query(
-      `
-      INSERT INTO user_equipment (user_id)
-      VALUES ($1)
-      `,
+      `INSERT INTO user_equipment (user_id) VALUES ($1)`,
       [user.id]
     );
 
+    await pool.query("COMMIT");
+
     const token = jwt.sign(
-      { userId: user.id, is_admin: false },
+      { userId: user.id, is_admin: user.is_admin || false },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
     res.json({ token, user });
   } catch (err) {
+    // Only rollback if transaction started
+    if (transactionStarted) {
+      await pool.query("ROLLBACK");
+    }
+
     if (err.code === "23505") {
       return res.status(409).json({
         error: "Username already exists",
@@ -425,7 +446,7 @@ app.post("/auth/register", async (req, res) => {
     }
 
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Server error" });
   }
 });
 
@@ -435,7 +456,7 @@ app.post("/auth/login", async (req, res) => {
     // Validate input before doing anything else
     const parsed = loginSchema.parse(req.body);
 
-    const { username, password } = req.body;
+    const { username, password } = parsed;
 
     const result = await pool.query("SELECT * FROM users WHERE username = $1", [
       username,
@@ -443,23 +464,17 @@ app.post("/auth/login", async (req, res) => {
 
     const user = result.rows[0];
 
-    if (!user) {
-      return res.status(401).json({ error: "User not found" });
-    }
-
-    const valid = await bcrypt.compare(password, user.password_hash);
-
-    if (!valid) {
-      return res.status(401).json({ error: "Invalid password" });
+    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+      return res.status(401).json({ error: "Invalid credentials" });
     }
 
     const token = jwt.sign(
       {
         userId: user.id,
         email: user.email,
-        is_admin: false,
+        is_admin: user.is_admin,
       },
-      SECRET
+      process.env.JWT_SECRET
     );
 
     res.json({ token, user });
@@ -470,7 +485,7 @@ app.post("/auth/login", async (req, res) => {
     }
 
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Server error" });
   }
 });
 
