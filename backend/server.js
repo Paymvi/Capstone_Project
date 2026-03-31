@@ -1,16 +1,26 @@
-import { loginSchema } from "../validation/authSchema.js";
-import { registerSchema } from "./validation/authSchemas.js";
+import { loginSchema, registerSchema } from "./validation/authSchemas.js";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 
-require("dotenv").config();
-const SECRET = process.env.JWT_SECRET;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-const express = require("express");
-const cors = require("cors");
-const fs = require("fs");
-const path = require("path");
-const authMiddleware = require("./middleware/authMiddleware");
-const requireAdmin = require("./middleware/adminMiddleware");
-const bcrypt = require("bcrypt");
+import dotenv from "dotenv";
+dotenv.config();
+
+import express from "express";
+import cors from "cors";
+import fs from "fs";
+import path from"path";
+import authMiddleware from "./middleware/authMiddleWare.js";
+import requireAdmin from "./middleware/adminMiddleware.js";
+import bcrypt from "bcrypt";
+import pool from "./db.js";
+
+// Google Auth created routes
+import { OAuth2Client } from "google-auth-library";
+import jwt from "jsonwebtoken";
+
 
 console.log("DATABASE_URL:", process.env.DATABASE_URL);
 console.log("JWT_SECRET:", process.env.JWT_SECRET);
@@ -31,18 +41,12 @@ const DB_PATH = path.join(__dirname, "db.json");
 
 console.log("DATABASE_URL:", process.env.DATABASE_URL);
 
-const pool = require("./db");
-
-// Google Auth created routes
-const { OAuth2Client } = require("google-auth-library");
-const jwt = require("jsonwebtoken");
-
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 app.get("/", (req, res) => {
-  res.send("Roamie is running on port 3000 🔥");
+  res.send("Roamie is running on port 5000 🔥");
 });
 
 // Creates a new user account
@@ -411,7 +415,7 @@ app.post("/auth/register", async (req, res) => {
     transactionStarted = true;
 
     const dbResult = await pool.query(
-      `INSERT INTO users (username, password_hash)
+      `INSERT INTO users (username, password)
        VALUES ($1, $2)
        RETURNING id, username, is_admin`,
       [username, hashedPassword]
@@ -456,7 +460,8 @@ app.post("/auth/login", async (req, res) => {
     // Validate input before doing anything else
     const parsed = loginSchema.parse(req.body);
 
-    const { username, password } = parsed;
+    const username = parsed.username.toLowerCase().trim();
+    const password = parsed.password;
 
     const result = await pool.query("SELECT * FROM users WHERE username = $1", [
       username,
@@ -464,7 +469,7 @@ app.post("/auth/login", async (req, res) => {
 
     const user = result.rows[0];
 
-    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
