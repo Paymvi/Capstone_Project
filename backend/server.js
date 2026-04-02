@@ -14,6 +14,7 @@ import fs from "fs";
 import path from"path";
 import authMiddleware from "./middleware/authMiddleWare.js";
 import requireAdmin from "./middleware/adminMiddleware.js";
+import { loginLimiter } from "./middleware/rateLimiter.js";
 import bcrypt from "bcrypt";
 import pool from "./db.js";
 
@@ -455,7 +456,7 @@ app.post("/auth/register", async (req, res) => {
 });
 
 // Login Route
-app.post("/auth/login", async (req, res) => {
+app.post("/auth/login", loginLimiter, async (req, res) => {
   try {
     // Validate input before doing anything else
     const parsed = loginSchema.parse(req.body);
@@ -479,7 +480,8 @@ app.post("/auth/login", async (req, res) => {
         email: user.email,
         is_admin: user.is_admin,
       },
-      process.env.JWT_SECRET
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
     );
 
     res.json({ token, user });
