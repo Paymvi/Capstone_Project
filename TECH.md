@@ -155,6 +155,38 @@ Roamie has two project versions, one that has integrated security and one insecu
 ### Secure Version
 Roamie's secure version incorporates secure practices such as parameterized queries, password hashing, JWT authentication, role-based access and input validation. We want to ensure the protection of game data at all times within Roamie, so instead of implementing one security method we combined many distinct methods to strengthen data protection. In the future, we plan to implement damage control and containment in the scenario that our data is breached.
 
+### Additional Security Measures
+To further strengthen Roamie's security, multiple defensive layers are implementeted to protect against abuse, unauthorized access, and system compromise. These controls complement core protections such as paramterized queries, authentication and role-based access, encompassing a defense-depth security model for Roamie. 
+
+#### Login Rate Limiting
+To prevent brute-force attacks, login attemps are designed to be rate-limited.
+* Limits the number of login requests (5) within a time window of 60 seconds
+* Temporarily blocks repeated faued attempts
+* Reduces risk of credential stuffiing attacks
+
+#### Account Lockouts
+Accounts are temporarily locked after a set number of failed login attempts. 
+* Prevents the event of a threat actor guessing credentials
+* Adds an additional layer beond rate limiting
+
+#### Abnormal Query Detection
+Abnormal or suspicious database queries are monitored within the system.
+* Detects abnormal query patterns or  excessive requests
+* Helps identify potential SQL injection or exploitation attempts
+* Can trigger alerts or defensive actions
+
+#### JWT Token Invalidation
+JWT Tokens can be invalidated to prevent unathorized reuse. 
+* Tokens may be blacklisted after logout or suspicious activity
+* Prevents threat actors from reusing compromised tokens
+* Supports session control despite JWT being stateless
+
+#### Logging and Monitoring
+Security-related events are logged for auditing and analysis. 
+* Tracks login attempts, failed authentication, and sensitive action
+* Enables detection of suspicious behavior 
+* Supports incident response and debugging
+
 ### Insecure Version
 Even in the insecure version, monitoring and recovery mechanisms were explored to handle the breach of data by unauthorized users. Emphasizing the importance of quality and secure code creation. While also reinforcing the measures that need to be set in place in the scenario data is breached to prevent potential business losses. 
 
