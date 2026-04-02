@@ -71,9 +71,33 @@
   border: none;
 }
 
+.login-btn:disabled{
+  background: rgb(103, 103, 103);
+  color: white;
+  padding: 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: not-allowed;
+}
+
 .google-btn {
   background: white;
   border: 1px solid #ddd;
   padding: 12px;
   border-radius: 6px;
+}
+
+.cooldown-bar-container {
+  width: 100%;
+  height: 6px;
+  background: #eee;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.cooldown-bar {
+  height: 100%;
+  background: rgb(179, 0, 255);
+  transition: width 1s linear;
 }

@@ -23,7 +23,9 @@ export async function apiPasswordLogin(username, password) {
   });
 
   if (!res.ok) {
-    throw new Error("Login failed");
+    const data = await res.json().catch(() => ({}));
+
+    throw new Error(data.error || "Login failed");
   }
 
   return res.json();
