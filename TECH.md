@@ -155,11 +155,29 @@ Roamie has two project versions, one that has integrated security and one insecu
 ### Secure Version
 Roamie's secure version incorporates secure practices such as parameterized queries, password hashing, JWT authentication, role-based access and input validation. We want to ensure the protection of game data at all times within Roamie, so instead of implementing one security method we combined many distinct methods to strengthen data protection. In the future, we plan to implement damage control and containment in the scenario that our data is breached.
 
+#### Parameterized Queries
+Parameterized queries is our are primary defense against SQL attacks.
+* 
+* 
+* 
+
+#### Hashed Passwords
+To prevent passwords from being read plaintext, passwords are stored hash values.
+* 
+* 
+* 
+
+#### Input Validation
+In limiting length of characters in input for username and password, the system would be reducing the attack surface  
+
+#### Least Privileged
+
+
 ### Additional Security Measures
 To further strengthen Roamie's security, multiple defensive layers are implementeted to protect against abuse, unauthorized access, and system compromise. These controls complement core protections such as paramterized queries, authentication and role-based access, encompassing a defense-depth security model for Roamie. 
 
 #### Login Rate Limiting
-To prevent brute-force attacks, login attemps are designed to be rate-limited.
+To prevent brute-force attacks, login attempts are designed to be rate-limited.
 * Limits the number of login requests (5) within a time window of 60 seconds
 * Temporarily blocks repeated faued attempts
 * Reduces risk of credential stuffiing attacks
