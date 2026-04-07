@@ -470,8 +470,55 @@ app.post("/auth/login", loginLimiter, async (req, res) => {
 
     const user = result.rows[0];
 
+    if(user && user.lock_until && new Date(user.lock_until) > new Date()){
+      const remainingTime = Math.ceil(
+        (new Date(user.lock_until) - new Date()) / 1000
+      );
+      
+      return res.status(403).json({
+        error: "Account is temporarily locked.", 
+        remainingTime,
+      });
+    }
+
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      await pool.query(
+        `UPDATE users
+        SET failed_attempts = failed_attempts + 1
+        WHERE username = $1`,
+        [username]
+      );
+
+      // Get updated attempts
+      const result = await pool.query(
+        `SELECT failed_attempts FROM users WHERE username = $1`,
+        [username]
+      );
+
+      const attempts = result.rows[0].failed_attempts;
+
+      // Lock after 5 attempts
+      if(attempts >= 5){
+        const lockTime = new Date(Date.now() + 5 * 60 * 1000); // 5 min
+        const remainingTime = 5 * 60; // hardcode
+
+        await pool.query(
+          `UPDATE users
+          SET lock_until = $1, failed_attempts = 0
+          WHERE username = $2`,
+          [lockTime, username]
+        );
+
+        return res.status(403).json({
+          error: "Account locked due to too many failed attempts.",
+          remainingTime,
+        });
+      }
+
+
+      return res.status(401).json({ 
+        error: "Invalid credentials" 
+      });
     }
 
     const token = jwt.sign(
@@ -482,6 +529,13 @@ app.post("/auth/login", loginLimiter, async (req, res) => {
       },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
+    );
+
+    await pool.query(
+      `UPDATE users
+      SET failed_attempts = 0, lock_until = NULL
+      WHERE id = $1`,
+      [user.id]
     );
 
     res.json({ token, user });
