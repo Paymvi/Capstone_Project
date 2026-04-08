@@ -136,7 +136,7 @@
 
 
 html, body {
-    overflow: hidden;
+    overflow-y: auto;
     
 }
 

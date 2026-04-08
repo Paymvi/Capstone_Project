@@ -602,6 +602,23 @@ app.post("/markers", authMiddleware, requireAdmin, async (req, res) => {
   console.log("USER:", req.user);
 });
 
+// Security log route
+app.get("/security-logs", authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT username, ip_address, event_type, input, created_at
+      FROM security_logs
+      ORDER BY created_at DESC
+      LIMIT 50
+    `);
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("LOG FETCH ERROR:", err);
+    res.status(500).json({ error: "Failed to fetch logs" });
+  }
+});
+
 // Test route
 app.get("/health/db", async (_req, res) => {
   try {

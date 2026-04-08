@@ -17,6 +17,7 @@ import Login from "./pages/Login";
 import MapScreen from "./pages/MapScreen"
 import SecondScreen from "./pages/SecondScreen"
 import ProfilePage from "./pages/ProfilePage"
+import SecurityLogs from "./pages/SecurityLogs";
 
 
 import { FiSun, FiBarChart2, FiUser, FiMap, FiPackage } from "react-icons/fi";
@@ -247,6 +248,8 @@ return (
           />
 
           <Route path="/admin" element={<AdminPage />} />
+
+          <Route path="/security-logs" element={<SecurityLogs />} />
 
 
         </Routes>
