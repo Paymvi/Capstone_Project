@@ -593,6 +593,13 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
             </select>
           </div>
         )}
+
+        {/* Security Logs Button */}
+        {user?.is_admin && (
+          <button className="admin-btn" onClick={() => navigate("/security-logs")}>
+            🔐 Security Logs
+          </button>
+        )}
     
         {/* This is where the map lives */}
         <MapContainer
