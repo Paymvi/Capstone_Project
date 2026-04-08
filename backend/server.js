@@ -1,6 +1,8 @@
 import { loginSchema, registerSchema } from "./validation/authSchemas.js";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import  {isSuspicious}  from "./utils/security.js";
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -17,10 +19,12 @@ import requireAdmin from "./middleware/adminMiddleware.js";
 import { loginLimiter } from "./middleware/rateLimiter.js";
 import bcrypt from "bcrypt";
 import pool from "./db.js";
+import { logSecurityEvent, checkAndLockIP, isIpLocked } from "./services/securityLogger.js";
 
 // Google Auth created routes
 import { OAuth2Client } from "google-auth-library";
 import jwt from "jsonwebtoken";
+import { error } from "console";
 
 
 console.log("DATABASE_URL:", process.env.DATABASE_URL);
@@ -464,6 +468,14 @@ app.post("/auth/login", loginLimiter, async (req, res) => {
     const username = parsed.username.toLowerCase().trim();
     const password = parsed.password;
 
+    const ip = req.ip;
+
+    if(await isIpLocked(ip)){
+      return res.status(403).json({
+        error: "Too many suspicious requests from this IP. Try again later.",
+      });
+    }
+
     const result = await pool.query("SELECT * FROM users WHERE username = $1", [
       username,
     ]);
@@ -481,6 +493,22 @@ app.post("/auth/login", loginLimiter, async (req, res) => {
       });
     }
 
+    // Detect abnormal input 
+    if (isSuspicious(username) || isSuspicious(password)) {
+      await logSecurityEvent({
+        username, 
+        ip,
+        input: `${username} | ${password}`,
+        type: "SUSPICIOUS_INPUT",
+      });
+
+      await checkAndLockIP(ip);
+
+      return res.status(400).json({
+        error: "Invalid input detected.",
+      });
+    }
+
     if (!user || !(await bcrypt.compare(password, user.password))) {
       await pool.query(
         `UPDATE users
@@ -489,13 +517,20 @@ app.post("/auth/login", loginLimiter, async (req, res) => {
         [username]
       );
 
+      await logSecurityEvent({
+        username,
+        ip,
+        input: "Invalid credentials",
+        type: "FAILED_LOGIN",
+      });
+
       // Get updated attempts
-      const result = await pool.query(
+      const attemptsResult = await pool.query(
         `SELECT failed_attempts FROM users WHERE username = $1`,
         [username]
       );
 
-      const attempts = result.rows[0].failed_attempts;
+      const attempts = attemptsResult.rows[0].failed_attempts;
 
       // Lock after 5 attempts
       if(attempts >= 5){

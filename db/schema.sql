@@ -47,6 +47,21 @@ CREATE TABLE user_equipment (
 	outside_item_id VARCHAR(255)
 );
 
+CREATE TABLE security_logs (
+  id SERIAL PRIMARY KEY,
+  username TEXT,
+  ip_address TEXT,
+  event_type TEXT,
+  input TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE security_ip_locks (
+  id SERIAL PRIMARY KEY,
+  ip_address TEXT UNIQUE,
+  lock_until TIMESTAMP
+);
+
 -- Index for faster inventory lookups
 CREATE INDEX idx_inventory_user
 ON user_inventory(user_id);
