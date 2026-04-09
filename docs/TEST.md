@@ -4,6 +4,7 @@
 
 This test suite validates the security, authentication, and core gameplay functionality of the Roamie backend. The goal is to ensure that both user interactions and security mechanisms behave correctly under normal and adversarial conditions.
 
+This test suite includes **16 automated test cases** across authentication, security, and core gameplay functionality.
 ---
 
 ## Testing Tools
@@ -17,18 +18,24 @@ This test suite validates the security, authentication, and core gameplay functi
 
 ## Test Cases
 
-| Test ID | Category | Description            | Expected Result                  |
-| ------- | -------- | ---------------------- | -------------------------------- |
-| TC-01   | Security | SQL injection attempt  | 400 or blocked                   |
-| TC-02   | Auth     | Invalid login          | 401 or 403                       |
-| TC-03   | Security | Rate limiting          | 429 or 403                       |
-| TC-04   | Security | Account lockout        | 403 after threshold              |
-| TC-05   | Security | Password hashing       | Password not stored in plaintext |
-| TC-06   | Core     | Collect item           | Item added to inventory          |
-| TC-07   | Core     | Equip item             | Equipment updated                |
-| TC-08   | Core     | Get markers            | Returns array of markers         |
-| TC-09   | Core     | Duplicate collection   | No duplicate entries             |
-| TC-10   | Core     | Hide collected markers | Collected items not returned     |
+| Test ID | Category | Description | Expected Result |
+|--------|---------|------------|----------------|
+| TC-01 | Auth | Register user | 200 success |
+| TC-02 | Auth | Duplicate username | 400 error |
+| TC-03 | Auth | Login returns JWT | Token returned |
+| TC-04 | Auth | JWT validation | Correct payload |
+| TC-05 | Auth | Protected route requires token | 401 |
+| TC-06 | Auth | Invalid token rejected | 401 |
+| TC-07 | Core | Collect item | Item added |
+| TC-08 | Core | Equip item | Equipment updated |
+| TC-09 | Core | Get markers | Returns array |
+| TC-10 | Core | Prevent duplicate collection | No duplicates |
+| TC-11 | Core | Hide collected markers | Not returned |
+| TC-12 | Security | SQL injection attempt | Blocked |
+| TC-13 | Security | Invalid login | 401/403 |
+| TC-14 | Security | Rate limiting | 429/403 |
+| TC-15 | Security | Account lockout | 403 |
+| TC-16 | Security | Password hashing | Not plaintext |
 
 ---
 
@@ -112,6 +119,44 @@ Expected:
 
 ---
 
+## Authentication Testing
+
+Additional authentication-focused tests were implemented to ensure correct user account behavior and token handling.
+
+Tests include:
+
+* **User Registration**
+
+  * Verifies that new users can successfully register
+  * Ensures required fields are validated
+
+* **Duplicate Username Handling**
+
+  * Prevents multiple accounts with the same username
+  * Returns an error when attempting to register an existing username
+
+* **Login & JWT Generation**
+
+  * Confirms successful login returns a valid JWT token
+  * Verifies token contains correct user metadata
+
+* **Protected Route Access**
+
+  * Ensures endpoints require authentication
+  * Rejects requests with missing or invalid tokens
+
+---
+
+## Test Organization
+
+Tests are organized into three categories:
+
+- `auth.test.js` → Authentication and JWT validation  
+- `core.test.js` → Core gameplay functionality  
+- `security.test.js` → Security and abuse prevention  
+
+This separation improves maintainability and clarity of test coverage.
+
 ## Defense-in-Depth
 
 Roamie implements multiple overlapping security layers:
@@ -147,7 +192,7 @@ afterAll(async () => {
 
 ---
 
-## ✅ Results
+## Results
 
 All test cases passed successfully.
 

@@ -114,7 +114,3 @@ describe("Core Gameplay Tests", () => {
         expect(markerIds).not.toContain(1);
     });
 });
-
-afterAll(async () => {
-  await pool.end();
-});

@@ -415,6 +415,18 @@ app.post("/auth/register", async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Prevent duplicate usernames
+    const existingUser = await pool.query(
+      "SELECT * FROM users WHERE username = $1",
+      [username]
+    );
+
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({
+        error: "Username already exists"
+      });
+    }
+
     // Start transaction
     await pool.query("BEGIN");
     transactionStarted = true;
