@@ -1,5 +1,5 @@
 import { apiPasswordLogin, apiRegister, apiGoogleLogin } from "../api";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import "./Login.css";
@@ -8,11 +8,88 @@ export default function Login({ onLoggedIn }) {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [lockTime, setLockTime] = useState(0);
+
+  //Initialize cooldown directly
+  const [cooldown, setCooldown] = useState(() => {
+    const saved = localStorage.getItem("loginCooldown");
+    if(!saved) {
+      return 0;
+    }
+
+    const expiry = Number(saved);
+    if(isNaN(expiry)){
+      return 0;
+    }
+
+    const remaining = Math.floor((expiry - Date.now()) / 1000);
+    return remaining > 0 ? remaining : 0;
+  });
+
+  const isBlocked = cooldown > 0 || lockTime > 0;
+
+  const barColor = lockTime > 0 ? "red" : "purple";
+
+  useEffect(() => {
+    if(cooldown <= 0){
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1){
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [cooldown]);
+
+  // Countdown  Timer Logic
+  useEffect(() => {
+    if(lockTime <= 0){
+      return; 
+    }
+
+    const timer = setInterval(() => {
+      setLockTime((prev) =>  Math.max(prev - 1, 0));
+    }, 1000);
+
+    return () => clearInterval(timer); 
+  }, [lockTime]);
+  
+  // Format time 
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60; 
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+  
+  const progress = lockTime > 0
+  ? (lockTime / 300) * 100   // 5 min lock
+  : (cooldown / 60) * 100;
+
+  // NOTE: Disabled for development speed. Re-enable for demo
+  
+  // useEffect(() => {
+  //   if (cooldown > 0){
+  //     localStorage.setItem("loginCooldown", Date.now() + cooldown * 1000);
+  //   }
+  //   else{
+  //     localStorage.removeItem("loginCooldown");
+  //   }
+  // }, [cooldown]);
 
   async function handleLogin() {
     try {
 
       const data = await apiPasswordLogin(username, password);
+
+      setError("");
 
       console.log("LOGIN RESPONSE:", data);
 
@@ -25,8 +102,22 @@ export default function Login({ onLoggedIn }) {
     }
     catch (err){
       console.error("Login error", err);
+      setError(err.message);
+
+      if (err.message.includes("Too many")){
+        setCooldown(60); // 60 seconds 
+      }
+
+      if (err.response?.status === 403) {
+        const remaining = err.response?.data?.remainingTime;
+        if (remaining) {
+          setError(""); // clear old error
+          setLockTime(remaining);
+        }
+      }
     }
   }
+
 
   async function handleRegister(){
     try { 
@@ -91,7 +182,30 @@ export default function Login({ onLoggedIn }) {
               placeholder="Password"
             />
 
+            {error && (
+              <p style={{color: "red", marginBottom: "10px"}}>
+                {error}
+              </p>
+            )}
+
+            {lockTime > 0 ? (
+              <p style = {{color: "red", marginBottom: "10px" }}> Too many failed attempts. Try again in {formatTime(lockTime)}</p>
+            ) : cooldown > 0 ? (
+              <p style = {{color: "purple", marginBottom: "10px" }}>Try again in {cooldown}s</p>
+            ) : null}
+
+            <div className="cooldown-bar-container">
+              <div
+                className="cooldown-bar"
+                style={{
+                  width: `${progress}%`,
+                  backgroundColor: barColor,
+                }}
+              />
+            </div>
+
             <button className="login-btn"
+              disabled={isBlocked}
               onClick={handleLogin}
               style={{ marginLeft: 10, padding: 8 }}
             >

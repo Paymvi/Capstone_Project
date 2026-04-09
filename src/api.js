@@ -1,4 +1,4 @@
-const API = "http://localhost:3000";
+const API = "http://localhost:5000";
 
 export function authHeaders() {
   const token = localStorage.getItem("token");
@@ -23,7 +23,9 @@ export async function apiPasswordLogin(username, password) {
   });
 
   if (!res.ok) {
-    throw new Error("Login failed");
+    const data = await res.json().catch(() => ({}));
+
+    throw new Error(data.error || "Login failed");
   }
 
   return res.json();
@@ -49,7 +51,7 @@ export async function apiGetState() {
 export async function apiAddMarker(lat, lng, item_id) {
   const token = localStorage.getItem("token");
 
-  const res = await fetch("http://localhost:3000/markers", {
+  const res = await fetch("http://localhost:5000/markers", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -115,7 +117,7 @@ export async function apiSetCollected(itemId) {
 
 //Get items
 export async function apiGetItems() {
-  const res = await fetch("http://localhost:3000/items");
+  const res = await fetch("http://localhost:5000/items");
   return res.json();
 }
 
@@ -168,7 +170,7 @@ export async function apiGetMarkers() {
   const token = localStorage.getItem("token");
     console.log("GET MARKERS TOKEN:", token);
 
-  const res = await fetch("http://localhost:3000/markers", {
+  const res = await fetch("http://localhost:5000/markers", {
     headers: {
       Authorization: `Bearer ${token}`
     }

@@ -1,13 +1,31 @@
-require("dotenv").config();
-const SECRET = process.env.JWT_SECRET;
+import { loginSchema, registerSchema } from "./validation/authSchemas.js";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+import  {isSuspicious}  from "./utils/security.js";
 
-const express = require("express");
-const cors = require("cors");
-const fs = require("fs");
-const path = require("path");
-const authMiddleware = require("./middleware/authMiddleware");
-const requireAdmin = require("./middleware/adminMiddleware");
-const bcrypt = require("bcrypt");
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+import dotenv from "dotenv";
+dotenv.config();
+
+import express from "express";
+import cors from "cors";
+import fs from "fs";
+import path from"path";
+import authMiddleware from "./middleware/authMiddleWare.js";
+import requireAdmin from "./middleware/adminMiddleware.js";
+import { loginLimiter } from "./middleware/rateLimiter.js";
+import bcrypt from "bcrypt";
+import pool from "./db.js";
+import { logSecurityEvent, checkAndLockIP, isIpLocked } from "./services/securityLogger.js";
+
+// Google Auth created routes
+import { OAuth2Client } from "google-auth-library";
+import jwt from "jsonwebtoken";
+import { error } from "console";
+
 
 console.log("DATABASE_URL:", process.env.DATABASE_URL);
 console.log("JWT_SECRET:", process.env.JWT_SECRET);
@@ -28,18 +46,12 @@ const DB_PATH = path.join(__dirname, "db.json");
 
 console.log("DATABASE_URL:", process.env.DATABASE_URL);
 
-const pool = require("./db");
-
-// Google Auth created routes
-const { OAuth2Client } = require("google-auth-library");
-const jwt = require("jsonwebtoken");
-
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 app.get("/", (req, res) => {
-  res.send("Roamie is running on port 3000 🔥");
+  res.send("Roamie is running on port 5000 🔥");
 });
 
 // Creates a new user account
@@ -386,36 +398,56 @@ app.get("/markers", authMiddleware, async (req, res) => {
 
 // Register Route
 app.post("/auth/register", async (req, res) => {
-  const { username, password } = req.body;
+  let transactionStarted = false; 
 
   try {
+
+    // Validate input before doing anything else
+    const result = registerSchema.safeParse(req.body);
+
+    if(!result.success){
+      return res.status(400).json({ error: "Invalid input format" });
+    }
+
+    // Normalize input
+    const username = result.data.username.toLowerCase().trim();
+    const { password } = result.data;
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const result = await pool.query(
-      `INSERT INTO users (username, password_hash)
+    // Start transaction
+    await pool.query("BEGIN");
+    transactionStarted = true;
+
+    const dbResult = await pool.query(
+      `INSERT INTO users (username, password)
        VALUES ($1, $2)
-       RETURNING id, username`,
+       RETURNING id, username, is_admin`,
       [username, hashedPassword]
     );
 
-    const user = result.rows[0];
-
+    const user = dbResult.rows[0];
+    
     await pool.query(
-      `
-      INSERT INTO user_equipment (user_id)
-      VALUES ($1)
-      `,
+      `INSERT INTO user_equipment (user_id) VALUES ($1)`,
       [user.id]
     );
 
+    await pool.query("COMMIT");
+
     const token = jwt.sign(
-      { userId: user.id, is_admin: false },
+      { userId: user.id, is_admin: user.is_admin || false },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
     res.json({ token, user });
   } catch (err) {
+    // Only rollback if transaction started
+    if (transactionStarted) {
+      await pool.query("ROLLBACK");
+    }
+
     if (err.code === "23505") {
       return res.status(409).json({
         error: "Username already exists",
@@ -423,44 +455,133 @@ app.post("/auth/register", async (req, res) => {
     }
 
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Server error" });
   }
 });
 
 // Login Route
-app.post("/auth/login", async (req, res) => {
-  const { username, password } = req.body;
-
+app.post("/auth/login", loginLimiter, async (req, res) => {
   try {
+    // Validate input before doing anything else
+    const parsed = loginSchema.parse(req.body);
+
+    const username = parsed.username.toLowerCase().trim();
+    const password = parsed.password;
+
+    const ip = req.ip;
+
+    if(await isIpLocked(ip)){
+      return res.status(403).json({
+        error: "Too many suspicious requests from this IP. Try again later.",
+      });
+    }
+
     const result = await pool.query("SELECT * FROM users WHERE username = $1", [
       username,
     ]);
 
     const user = result.rows[0];
 
-    if (!user) {
-      return res.status(401).json({ error: "User not found" });
+    if(user && user.lock_until && new Date(user.lock_until) > new Date()){
+      const remainingTime = Math.ceil(
+        (new Date(user.lock_until) - new Date()) / 1000
+      );
+      
+      return res.status(403).json({
+        error: "Account is temporarily locked.", 
+        remainingTime,
+      });
     }
 
-    const valid = await bcrypt.compare(password, user.password_hash);
+    // Detect abnormal input 
+    if (isSuspicious(username) || isSuspicious(password)) {
+      await logSecurityEvent({
+        username, 
+        ip,
+        input: `${username} | ${password}`,
+        type: "SUSPICIOUS_INPUT",
+      });
 
-    if (!valid) {
-      return res.status(401).json({ error: "Invalid password" });
+      await checkAndLockIP(ip);
+
+      return res.status(400).json({
+        error: "Invalid input detected.",
+      });
+    }
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      await pool.query(
+        `UPDATE users
+        SET failed_attempts = failed_attempts + 1
+        WHERE username = $1`,
+        [username]
+      );
+
+      await logSecurityEvent({
+        username,
+        ip,
+        input: "Invalid credentials",
+        type: "FAILED_LOGIN",
+      });
+
+      // Get updated attempts
+      const attemptsResult = await pool.query(
+        `SELECT failed_attempts FROM users WHERE username = $1`,
+        [username]
+      );
+
+      const attempts = attemptsResult.rows[0].failed_attempts;
+
+      // Lock after 5 attempts
+      if(attempts >= 5){
+        const lockTime = new Date(Date.now() + 5 * 60 * 1000); // 5 min
+        const remainingTime = 5 * 60; // hardcode
+
+        await pool.query(
+          `UPDATE users
+          SET lock_until = $1, failed_attempts = 0
+          WHERE username = $2`,
+          [lockTime, username]
+        );
+
+        return res.status(403).json({
+          error: "Account locked due to too many failed attempts.",
+          remainingTime,
+        });
+      }
+
+
+      return res.status(401).json({ 
+        error: "Invalid credentials" 
+      });
     }
 
     const token = jwt.sign(
       {
         userId: user.id,
         email: user.email,
-        is_admin: false,
+        is_admin: user.is_admin,
       },
-      SECRET
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    await pool.query(
+      `UPDATE users
+      SET failed_attempts = 0, lock_until = NULL
+      WHERE id = $1`,
+      [user.id]
     );
 
     res.json({ token, user });
   } catch (err) {
+    // Zod validation errors
+    if(err.name === "ZodError"){
+      return res.status(400).json({ error: "Invalid input format" });
+    }
+
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Server error" });
   }
 });
 
@@ -479,6 +600,23 @@ app.post("/markers", authMiddleware, requireAdmin, async (req, res) => {
 
   res.json(result.rows[0]);
   console.log("USER:", req.user);
+});
+
+// Security log route
+app.get("/security-logs", authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT username, ip_address, event_type, input, created_at
+      FROM security_logs
+      ORDER BY created_at DESC
+      LIMIT 50
+    `);
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("LOG FETCH ERROR:", err);
+    res.status(500).json({ error: "Failed to fetch logs" });
+  }
 });
 
 // Test route

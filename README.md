@@ -149,6 +149,20 @@ http://localhost:5173
 
 You should now be able to interact with the Roamie map, place markers, and collect items.
 
+## Testing on a Real Device (scrcpy)
+
+To test Roamie on your phone with full control:
+
+1. Download scrcpy: https://github.com/Genymobile/scrcpy
+2. Enable USB Debugging on your Android device
+3. Plug in your phone
+4. Run:
+   scrcpy
+
+This allows real-time testing of GPS, UI, and interactions.
+
+For full setup instructions, see: docs/scrcpy-setup.md
+
 ## Vertical Slice
 Our vertical slice implements interactive map markers that persist across sessions. When a user clicks on the map, the frontend sends the coordinates to the Express backend for storage, and the client re-fetches and renders those markers on reload; thus demonstrating the full-stack functionality of Roamie across the UI, API, and persistence layers.
 

@@ -1,0 +1,64 @@
+.logs-container {
+    padding: 30px;
+    color: white;
+    background: #0b0c10;
+    min-height: 100vh;
+    overflow-y: auto;
+}
+
+.logs-container h2 {
+    margin-bottom: 20px;
+}
+
+/* This is the scrollable area */
+.logs-scroll {
+    flex: 1;
+    overflow-y: auto;
+    margin-top: 20px;
+    border-radius: 10px;
+    scroll-behavior: smooth;
+}
+
+.logs-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #12141b;
+    border-radius: 10px;
+}
+
+.logs-table th {
+    text-align: left;
+    padding: 12px;
+    background: #1f2230;
+}
+
+.logs-table td {
+    padding: 12px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Hover effect */
+.logs-table tr:hover {
+    background: rgba(255,255,255,0.03);
+}
+
+/* Event colors */
+.danger {
+    color: #ff4d4f;
+    font-weight: bold;
+}
+
+.warning {
+    color: #ffa500;
+    font-weight: bold;
+}
+
+/* Input cell styling */
+.input-cell {
+    font-family: monospace;
+    color: #ccc;
+}
+
+.logs-table tr:first-child {
+    background: rgba(255, 77, 79, 0.1);
+}
