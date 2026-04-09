@@ -630,9 +630,13 @@ app.get("/health/db", async (_req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on: http://localhost:${PORT}`);
-});
+const isMain = process.argv[1] === fileURLToPath(import.meta.url);
+
+if (isMain) {
+  app.listen(PORT, () => {
+    console.log(`Server is running on: http://localhost:${PORT}`);
+  });
+}
 
 app.get("/tables", async (req, res) => {
   const result = await pool.query(`
@@ -654,3 +658,5 @@ app.get("/test-db", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+export default app;

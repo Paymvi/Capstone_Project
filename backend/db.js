@@ -1,6 +1,8 @@
-require("dotenv").config();
+import dotenv from "dotenv";
+import pkg from "pg";
 
-const { Pool } = require("pg");
+dotenv.config();
+const { Pool } = pkg;
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -14,4 +16,4 @@ pool.on("error", (err) => {
   console.error("❌ PostgreSQL error:", err.message);
 });
 
-module.exports = pool;
+export default pool;
