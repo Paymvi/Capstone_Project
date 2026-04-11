@@ -137,6 +137,12 @@ export default function Login({ onLoggedIn }) {
   const barColor = lockTime > 0 ? "red" : "purple";
 
   useEffect(() => {
+    setAnimate(true);
+    const timeout = setTimeout(() => setAnimate(false), 300);
+    return () => clearTimeout(timeout);
+  }, [password]);
+
+  useEffect(() => {
     if(cooldown <= 0){
       return;
     }
@@ -291,6 +297,7 @@ export default function Login({ onLoggedIn }) {
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Enter username"
               style={{ padding: 8 }}
+              maxLength={50}
             />
 
             <input 
@@ -298,11 +305,39 @@ export default function Login({ onLoggedIn }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
+              maxLength={50}
             />
+
+            <p style={{ frontSize: "12px", color: "#a5009f"}}>
+              {50 - password.length} characters remaining 
+            </p>
+
+            {password.length > 0 && (
+              <PasswordStrengthBar password={password} animate={animate}/>
+            )}
 
             {error && (
               <p style={{color: "red", marginBottom: "10px"}}>
                 {error}
+              </p>
+            )}
+
+
+            {username.length > 0 && username.length < 5 && (
+              <p style={{
+                fontSize: "12px",
+                color: username.length > 0 && username.length < 5 ? "red" : "#aaa"
+              }}>
+                Username must be 5–50 characters
+              </p>
+            )}
+
+            {password.length > 0 && password.length < 5 && (
+              <p style={{
+                fontSize: "12px",
+                color: password.length > 0 && password.length < 5 ? "red" : "#aaa"
+              }}>
+                Password must be 5–50 characters
               </p>
             )}
 
