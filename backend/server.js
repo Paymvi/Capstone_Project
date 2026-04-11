@@ -406,7 +406,9 @@ app.post("/auth/register", async (req, res) => {
     const result = registerSchema.safeParse(req.body);
 
     if(!result.success){
-      return res.status(400).json({ error: "Invalid input format" });
+      return res.status(400).json({ 
+        error: "Invalid input format" 
+      });
     }
 
     // Normalize input
