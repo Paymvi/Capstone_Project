@@ -2,60 +2,65 @@
   position: fixed;
   inset: 0;
   background: #0b0c10;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
+  overflow: hidden;
 }
 
-/* Raccoon bounce entrance */
-.raccoon {
-  width: 120px;
-  animation: popIn 0.6s ease;
-}
-
-/* Text fade */
-.welcome-text {
-  margin-top: 20px;
-  font-size: 18px;
-  color: white;
-  opacity: 0;
-  animation: fadeIn 0.8s ease forwards;
-  animation-delay: 0.5s;
-}
-
-/* Animations */
-@keyframes popIn {
-  0% {
-    transform: scale(0.5) translateY(40px);
-    opacity: 0;
-  }
-  60% {
-    transform: scale(1.1) translateY(-10px);
-  }
-  100% {
-    transform: scale(1) translateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes fadeIn {
-  to {
-    opacity: 1;
-  }
-}
-
-.raccoon::after {
-  content: "✨";
+/* TEXT MASK (hides text until revealed) */
+.text-mask {
   position: absolute;
-  right: -10px;
-  top: -10px;
-  animation: sparkle 1s infinite;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  
+  overflow: hidden;
+  white-space: nowrap;
+
+  width: 0; /* start hidden */
+  
+  animation: revealText 2s linear forwards;
 }
 
-@keyframes sparkle {
-  0% { opacity: 0; transform: scale(0.5); }
-  50% { opacity: 1; transform: scale(1.2); }
-  100% { opacity: 0; }
+/* actual text */
+.intro-text {
+  color: white;
+  font-size: 32px;
+}
+
+/* RACCOON */
+.raccoon-walk {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  
+  left: -100px;
+  width: 70px;
+
+  animation: walkAcross 2s linear forwards,
+             bounce 0.2s infinite alternate;
+}
+
+/* TEXT REVEAL */
+@keyframes revealText {
+  from {
+    width: 0;
+  }
+  to {
+    width: 400px; /* adjust based on text length */
+  }
+}
+
+/* WALK */
+@keyframes walkAcross {
+  from {
+    left: calc(50% - 200px); /* starts near text start */
+  }
+  to {
+    left: calc(50% + 200px); /* ends after text */
+  }
+}
+
+/* little bounce */
+@keyframes bounce {
+  from { transform: translateY(-50%) translateY(0); }
+  to   { transform: translateY(-50%) translateY(-4px); }
 }
