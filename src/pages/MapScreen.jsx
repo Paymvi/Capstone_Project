@@ -194,7 +194,9 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
 
       
 
-        console.log("Live location:", coords);
+        if(DEV_MODE){
+          console.log("Live location:", coords);
+        }
       },
       (error) => {
         console.error("Geolocation error:", error);
@@ -277,8 +279,10 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
     });
     console.log("EFFECT RUNNING");
 
-    console.log("liveLocation:", liveLocation);
-    console.log("markers:", markers);
+    if(DEV_MODE){
+      console.log("liveLocation:", liveLocation);
+      console.log("markers:", markers);
+    }
 
     if (!liveLocation || markers.length === 0) {
       console.log("EXITING EARLY ❌");
