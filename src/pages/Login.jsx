@@ -104,6 +104,7 @@ export default function Login({ onLoggedIn }) {
   const [animate, setAnimate] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
   const [loginData, setLoginData] = useState(null);
+  const [animate, setAnimate] = useState(false);
 
   // Handle events after user login
   // const handleLogin = async () => {
