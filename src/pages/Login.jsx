@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import "./Login.css";
+import RaccoonIntro from "../components/RaccoonIntro";
 
 // Validate Input 
 function calculatePasswordStrength(password){
@@ -101,6 +102,19 @@ export default function Login({ onLoggedIn }) {
   const [error, setError] = useState("");
   const [lockTime, setLockTime] = useState(0);
   const [animate, setAnimate] = useState(false);
+  const [showIntro, setShowIntro] = useState(false);
+  const [loginData, setLoginData] = useState(null);
+
+  // Handle events after user login
+  // const handleLogin = async () => {
+  //   await apiLogin();
+
+  //   setShowIntro(true);
+  // };
+
+  // if (showIntro) {
+  //   return <RaccoonIntro onFinish={() => navigate("/")} />;
+  // }
 
   //Initialize cooldown directly
   const [cooldown, setCooldown] = useState(() => {
@@ -175,6 +189,7 @@ export default function Login({ onLoggedIn }) {
   //   }
   // }, [cooldown]);
 
+  // Handle events after user login
   async function handleLogin() {
     try {
 
@@ -186,9 +201,10 @@ export default function Login({ onLoggedIn }) {
 
       localStorage.setItem("token", data.token);
 
-      onLoggedIn(data.user.id);
+      //onLoggedIn(data.user.id);
 
-      navigate("/");
+      setLoginData(data);
+      setShowIntro(true);
 
     }
     catch (err){
@@ -243,6 +259,17 @@ export default function Login({ onLoggedIn }) {
       console.error("Login error:", err);
     }
   };
+
+  if (showIntro && loginData) {
+    return (
+      <RaccoonIntro
+        onFinish={() => {
+          onLoggedIn(loginData.user.id); // NOW login happens
+          navigate("/");
+        }}
+      />
+    );
+  }
 
   return (
     <div className="login-container">

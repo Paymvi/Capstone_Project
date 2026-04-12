@@ -1,0 +1,61 @@
+.intro-overlay {
+  position: fixed;
+  inset: 0;
+  background: #0b0c10;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+/* Raccoon bounce entrance */
+.raccoon {
+  width: 120px;
+  animation: popIn 0.6s ease;
+}
+
+/* Text fade */
+.welcome-text {
+  margin-top: 20px;
+  font-size: 18px;
+  color: white;
+  opacity: 0;
+  animation: fadeIn 0.8s ease forwards;
+  animation-delay: 0.5s;
+}
+
+/* Animations */
+@keyframes popIn {
+  0% {
+    transform: scale(0.5) translateY(40px);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.1) translateY(-10px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
+}
+
+.raccoon::after {
+  content: "✨";
+  position: absolute;
+  right: -10px;
+  top: -10px;
+  animation: sparkle 1s infinite;
+}
+
+@keyframes sparkle {
+  0% { opacity: 0; transform: scale(0.5); }
+  50% { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0; }
+}
