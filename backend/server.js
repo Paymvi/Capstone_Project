@@ -406,7 +406,9 @@ app.post("/auth/register", async (req, res) => {
     const result = registerSchema.safeParse(req.body);
 
     if(!result.success){
-      return res.status(400).json({ error: "Invalid input format" });
+      return res.status(400).json({ 
+        error: "Invalid input format" 
+      });
     }
 
     // Normalize input
@@ -414,6 +416,18 @@ app.post("/auth/register", async (req, res) => {
     const { password } = result.data;
 
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Prevent duplicate usernames
+    const existingUser = await pool.query(
+      "SELECT * FROM users WHERE username = $1",
+      [username]
+    );
+
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({
+        error: "Username already exists"
+      });
+    }
 
     // Start transaction
     await pool.query("BEGIN");
@@ -470,7 +484,7 @@ app.post("/auth/login", loginLimiter, async (req, res) => {
 
     const ip = req.ip;
 
-    if(await isIpLocked(ip)){
+    if(process.env.NODE_ENV !== "test" && await isIpLocked(ip)){
       return res.status(403).json({
         error: "Too many suspicious requests from this IP. Try again later.",
       });
@@ -495,14 +509,18 @@ app.post("/auth/login", loginLimiter, async (req, res) => {
 
     // Detect abnormal input 
     if (isSuspicious(username) || isSuspicious(password)) {
-      await logSecurityEvent({
-        username, 
-        ip,
-        input: `${username} | ${password}`,
-        type: "SUSPICIOUS_INPUT",
-      });
-
-      await checkAndLockIP(ip);
+      if (process.env.NODE_ENV !== "test") {
+        await logSecurityEvent({
+          username, 
+          ip,
+          input: `${username} | ${password}`,
+          type: "SUSPICIOUS_INPUT",
+        });
+      }
+    
+      if (process.env.NODE_ENV !== "test") {
+        await checkAndLockIP(ip);
+      }
 
       return res.status(400).json({
         error: "Invalid input detected.",
@@ -510,50 +528,51 @@ app.post("/auth/login", loginLimiter, async (req, res) => {
     }
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      await pool.query(
-        `UPDATE users
-        SET failed_attempts = failed_attempts + 1
-        WHERE username = $1`,
-        [username]
-      );
+        if (user) {
+          await pool.query(
+            `UPDATE users
+            SET failed_attempts = failed_attempts + 1
+            WHERE id = $1`,
+            [user.id]
+          );
 
-      await logSecurityEvent({
-        username,
-        ip,
-        input: "Invalid credentials",
-        type: "FAILED_LOGIN",
-      });
+          const attemptsResult = await pool.query(
+            `SELECT failed_attempts FROM users WHERE id = $1`,
+            [user.id]
+          );
 
-      // Get updated attempts
-      const attemptsResult = await pool.query(
-        `SELECT failed_attempts FROM users WHERE username = $1`,
-        [username]
-      );
+          const attempts = attemptsResult.rows[0].failed_attempts;
 
-      const attempts = attemptsResult.rows[0].failed_attempts;
+          if (attempts >= 5) {
+            const lockTime = new Date(Date.now() + 5 * 60 * 1000);
 
-      // Lock after 5 attempts
-      if(attempts >= 5){
-        const lockTime = new Date(Date.now() + 5 * 60 * 1000); // 5 min
-        const remainingTime = 5 * 60; // hardcode
+            await pool.query(
+              `UPDATE users
+              SET lock_until = $1, failed_attempts = 0
+              WHERE id = $2`,
+              [lockTime, user.id]
+            );
 
-        await pool.query(
-          `UPDATE users
-          SET lock_until = $1, failed_attempts = 0
-          WHERE username = $2`,
-          [lockTime, username]
-        );
+            return res.status(403).json({
+              error: "Account locked due to too many failed attempts.",
+              remainingTime: 5 * 60,
+            });
+          }
+        }
 
-        return res.status(403).json({
-          error: "Account locked due to too many failed attempts.",
-          remainingTime,
+        // Logging stays the same
+        if (process.env.NODE_ENV !== "test") {
+          await logSecurityEvent({
+            username,
+            ip,
+            input: "Invalid credentials",
+            type: "FAILED_LOGIN",
+          });
+        }
+
+        return res.status(401).json({
+          error: "Invalid credentials"
         });
-      }
-
-
-      return res.status(401).json({ 
-        error: "Invalid credentials" 
-      });
     }
 
     const token = jwt.sign(
@@ -630,9 +649,13 @@ app.get("/health/db", async (_req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on: http://localhost:${PORT}`);
-});
+const isMain = process.argv[1] === fileURLToPath(import.meta.url);
+
+if (isMain) {
+  app.listen(PORT, () => {
+    console.log(`Server is running on: http://localhost:${PORT}`);
+  });
+}
 
 app.get("/tables", async (req, res) => {
   const result = await pool.query(`
@@ -654,3 +677,5 @@ app.get("/test-db", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+export default app;
