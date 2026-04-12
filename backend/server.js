@@ -42,6 +42,27 @@ app.use((req, res, next) => {
 // This file is your "database"
 const DB_PATH = path.join(__dirname, "db.json");
 
+// ---------- helper functions -----------
+
+// Get the distance in meters
+function getDistanceMeters(lat1, lng1, lat2, lng2){
+  const R = 6371000; // Earth radius in meters
+  const toRad = (deg) => (deg * Math.PI) / 180;
+
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+
+  const a = 
+    Math.sin(dLat / 2) ** 2 + 
+    Math.cos(toRad(lat1)) * 
+      Math.cos(toRad(lat2)) * 
+      Math.sin(dLng / 2) ** 2;
+
+  const c = 2 * Math.atan(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+}
+
 // ---------- routes ----------
 
 console.log("DATABASE_URL:", process.env.DATABASE_URL);
@@ -278,7 +299,49 @@ app.post("/items/collect", authMiddleware, async (req, res) => {
     }
 
     const userId = req.user.userId;
-    const { itemId } = req.body;
+    const { itemId, latitude, longitude } = req.body;
+
+    if (!itemId || latitude == null || longitude == null) {
+      return res.status(400).json({ error: "Missing itemId or location" });
+    }
+
+    const markerResult = await pool.query(
+      `SELECT latitude, longitude
+      FROM markers
+      WHERE item_id = $1`,
+      [itemId]
+    );
+
+    if (markerResult.rows.length === 0) {
+      return res.status(404).json({ error: "Marker not found for item" });
+    }
+
+    const marker = markerResult.rows[0];
+
+    const distance = getDistanceMeters(
+      Number(latitude),
+      Number(longitude),
+      Number(marker.latitude),
+      Number(marker.longitude)
+    );
+
+    const MAX_DISTANCE_METERS = 30;
+
+    if (distance > MAX_DISTANCE_METERS) {
+
+      await pool.query(
+        `INSERT INTO security_logs (username, ip_address, event_type, input)
+        VALUES ($1, $2, $3, $4)`,
+        [
+          req.user.username,
+          req.ip,
+          "CHEAT_ATTEMPT",
+          JSON.stringify({ itemId, latitude, longitude, distance })
+        ]
+      );
+
+      return res.status(403).json({ error: "You are too far away to collect this item" });
+    }
 
     await pool.query(
       `
@@ -286,7 +349,7 @@ app.post("/items/collect", authMiddleware, async (req, res) => {
       VALUES ($1, $2)
       ON CONFLICT (user_id, item_id) DO NOTHING
       `,
-      [userId, itemId]
+      [req.user.id, itemId]
     );
 
     res.json({ success: true });
