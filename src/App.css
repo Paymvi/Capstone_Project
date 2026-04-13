@@ -785,7 +785,7 @@ button.delete:hover {
 .locate-btn {
   position: absolute;
   bottom: 100px;
-  right: 25px;
+  right: 40px;
   z-index: 1000;
   padding: 10px 14px;
   border-radius: 999px;
@@ -859,4 +859,44 @@ button.delete:hover {
   font-size: 10px;
   color: #a4a4a4;
   margin-top: 2px;
+}
+
+
+.admin-banner {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  padding: 6px 14px;
+  border-radius: 999px;
+
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  border: 1px solid rgba(0, 0, 0, 0.15);
+
+  z-index: 2000;
+}
+
+.admin-banner {
+  animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }

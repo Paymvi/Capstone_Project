@@ -450,7 +450,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
 
         {user?.is_admin && (
           <div className="admin-banner">
-            🛠 Admin Mode: Click to place items
+            🛠 Admin Mode
           </div>
         )}
         
@@ -633,43 +633,6 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
           // isDraggingPegman={isDraggingPegman}
         />
 
-        {/* Static Markers
-        {staticLocations
-          .filter((loc) => !collectedItems.includes(loc.accessoryId)) // hide collected ones (uses global state)
-          .map((loc) => (
-            <Marker key={loc.id} position={loc.position}>
-              <Popup className="custom-popup">
-                <div className="popup-content">
-                  <div className="title">{loc.title}</div>
-                </div>
-
-
-                <div className="section">
-                    <div className= "info">
-                      
-                      <div style={{ textAlign: "center" }}>
-                        <img 
-                          src={loc.img}
-                          alt={loc.title}
-                          style={{
-                            width: "80px",
-                            marginLeft: "auto",
-                            marginRight: "auto"
-                          }}
-                        />
-                      </div>
-
-                      {loc.description}
-
-                      <br></br>
-                      
-                    </div>
-                </div>
-                
-                
-              </Popup>
-            </Marker>
-        ))} */}
 
         {/* Admin Added Markers */}
         {markers.map((loc, i) => (
