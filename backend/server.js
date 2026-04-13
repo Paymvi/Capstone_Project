@@ -1,3 +1,5 @@
+import cookieParser from "cookie-parser";
+
 import { loginSchema, registerSchema } from "./validation/authSchemas.js";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
@@ -20,6 +22,7 @@ import { loginLimiter } from "./middleware/rateLimiter.js";
 import bcrypt from "bcrypt";
 import pool from "./db.js";
 import { logSecurityEvent, checkAndLockIP, isIpLocked } from "./services/securityLogger.js";
+import rateLimit from "express-rate-limit";
 
 // Google Auth created routes
 import { OAuth2Client } from "google-auth-library";
@@ -79,9 +82,14 @@ app.post("/users", async (req, res) => {
 });
 
 // Fetch all users in the database
-app.get("/users", async (req, res) => {
+app.get("/admin/users", authMiddleware, requireAdmin, async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM users ORDER BY id");
+    const result = await pool.query(
+      `SELECT id, username, email, is_admin 
+      FROM users 
+      ORDER BY id`
+    );
+
     res.json(result.rows);
   } catch (err) {
     console.error(err);
@@ -397,7 +405,7 @@ app.get("/markers", authMiddleware, async (req, res) => {
 });
 
 // Register Route
-app.post("/auth/register", async (req, res) => {
+app.post("/auth/register", loginLimiter, async (req, res) => {
   let transactionStarted = false; 
 
   try {
@@ -441,7 +449,17 @@ app.post("/auth/register", async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    res.json({ token, user });
+    
+    // If request is from browser -> set cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // true on HTTPS production
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    // Return token for mobile clients
+    return res.json({ token, user });
   } catch (err) {
     // Only rollback if transaction started
     if (transactionStarted) {
@@ -454,7 +472,7 @@ app.post("/auth/register", async (req, res) => {
       });
     }
 
-    console.error(err);
+    console.error("Register error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
@@ -560,7 +578,7 @@ app.post("/auth/login", loginLimiter, async (req, res) => {
       {
         userId: user.id,
         email: user.email,
-        is_admin: user.is_admin,
+        is_admin: user.is_admin || false
       },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
@@ -573,6 +591,7 @@ app.post("/auth/login", loginLimiter, async (req, res) => {
       [user.id]
     );
 
+    // Return token for (for mobile clients)
     res.json({ token, user });
   } catch (err) {
     // Zod validation errors
@@ -634,7 +653,7 @@ app.listen(PORT, () => {
   console.log(`Server is running on: http://localhost:${PORT}`);
 });
 
-app.get("/tables", async (req, res) => {
+app.get("/tables", authMiddleware, requireAdmin, async (req, res) => {
   const result = await pool.query(`
     SELECT table_name
     FROM information_schema.tables
@@ -654,3 +673,5 @@ app.get("/test-db", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+app.use(cookieParser());

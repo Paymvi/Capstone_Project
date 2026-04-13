@@ -1,4 +1,5 @@
-import pool from "../db.js"
+// securityLogger.js
+const pool = require("../db.js");
 
 export async function logSecurityEvent({ username, ip, input, type }) {
   try {
