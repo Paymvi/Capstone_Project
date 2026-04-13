@@ -785,19 +785,20 @@ button.delete:hover {
 .locate-btn {
   position: absolute;
   bottom: 100px;
-  right: 25px;
+  right: 40px;
   z-index: 1000;
   padding: 10px 14px;
   border-radius: 999px;
   border: none;
   background: white;
   box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-  font-size: 14px;
+  font-size: 12px;
   cursor: pointer;
   transition: transform 0.1s ease;
   white-space: nowrap;
   width: auto;
   height: auto;
+  font-weight: 500;
 }
 
 
@@ -859,4 +860,71 @@ button.delete:hover {
   font-size: 10px;
   color: #a4a4a4;
   margin-top: 2px;
+}
+
+
+.admin-banner {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  padding: 6px 14px;
+  border-radius: 999px;
+
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  border: 1px solid rgba(0, 0, 0, 0.15);
+
+  z-index: 2000;
+}
+
+.admin-banner {
+  animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+
+/* Admin toolbar + cards */
+.admin-card {
+  background: white;
+  padding: 8px;
+  border-radius: 8px;
+  border: 2.5px solid rgba(0,0,0,0.7);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}
+
+.admin-btn {
+  border: none;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.admin-toolbar {
+  position: absolute;
+  top: 25px;
+  left: 60px;
+  z-index: 1000;
+  display: flex;
+  gap: 12px;
 }

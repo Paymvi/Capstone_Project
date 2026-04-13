@@ -144,6 +144,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
   const [items, setItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState("");
   const [collectedIds, setCollectedIds] = useState(new Set());
+  const [showItemModal, setShowItemModal] = useState(false);
 
   const blueMarker = new L.Icon({
     iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -400,6 +401,14 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
     }
   };
 
+  function handleSelectItem(itemId) {
+    setSelectedItem(itemId);
+    setShowItemModal(false);
+  }
+  const selectedItemData = items.find(
+    (item) => String(item.item_id) === String(selectedItem)
+  );
+
   async function handleAddMarker(lat, lng) {
     try {
       if (!selectedItem) {
@@ -422,7 +431,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
     <div style={{ height: '100vh', width: '100vw'}}>
 
       <button className="locate-btn" onClick={handleRefreshLocation}>
-        Recenter to pegman📍
+        Recenter📍
       </button>
 
       <div className="map-tint"></div>
@@ -441,41 +450,139 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
 
         {user?.is_admin && (
           <div className="admin-banner">
-            🛠 Admin Mode: Click to place items
+            🛠 Admin Mode
           </div>
         )}
         
-        {/* This is where the dropdown UI will be added */}
-        {user?.is_admin && (
-          <div style={{
-            position: "absolute",
-            top: "10px",
-            left: "10px",
-            zIndex: 1000,
-            background: "white",
-            padding: "8px",
-            borderRadius: "8px"
-          }}>
-            <select
-              value={selectedItem}
-              onChange={(e) => setSelectedItem(e.target.value)}
-            >
-              <option value="">Select Item</option>
+        
+        
 
-              {items.map(item => (
-                <option key={item.item_id} value={item.item_id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
+        {showItemModal && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.45)",
+              zIndex: 2000,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "16px",
+            }}
+            onClick={() => setShowItemModal(false)}
+          >
+            <div
+              style={{
+                width: "100%",
+                maxWidth: "500px",
+                maxHeight: "80vh",
+                overflowY: "auto",
+                background: "white",
+                borderRadius: "16px",
+                padding: "16px",
+                boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "12px",
+                }}
+              >
+                <h3 style={{ margin: 0 }}>Select an Item</h3>
+
+                <button
+                  onClick={() => setShowItemModal(false)}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    fontSize: "18px",
+                    cursor: "pointer",
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {items.map((item) => (
+                  <button
+                    key={item.item_id}
+                    onClick={() => handleSelectItem(item.item_id)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      width: "100%",
+                      textAlign: "left",
+                      border:
+                        String(selectedItem) === String(item.item_id)
+                          ? "2px solid #4f46e5"
+                          : "1px solid #ddd",
+                      background: "white",
+                      borderRadius: "12px",
+                      padding: "12px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      style={{
+                        width: "56px",
+                        height: "56px",
+                        objectFit: "contain",
+                        flexShrink: 0,
+                      }}
+                    />
+
+                    <div>
+                      <div style={{ fontWeight: "700", marginBottom: "4px" }}>
+                        {item.name}
+                      </div>
+
+                      <div style={{ fontSize: "13px", opacity: 0.75 }}>
+                        {item.description || "No description available."}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
+            
 
         {/* Security Logs Button */}
         {user?.is_admin && (
-          <button className="admin-btn" onClick={() => navigate("/security-logs")}>
-            🔐 Security Logs
-          </button>
+          <div className="admin-toolbar">
+
+            {/* Select Item */}
+            <div className="admin-card">
+              <button
+                className="admin-btn"
+                onClick={() => setShowItemModal(true)}
+              >
+                {selectedItemData
+                  ? `Selected: ${selectedItemData.name}`
+                  : "Select Item"}
+              </button>
+            </div>
+
+            {/* Security Logs */}
+            <div className="admin-card">
+              <button
+                className="admin-btn"
+                onClick={() => navigate("/security-logs")}
+              >
+                🔐 Security Logs
+              </button>
+            </div>
+
+          </div>
         )}
     
         {/* This is where the map lives */}
@@ -515,43 +622,6 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
           // isDraggingPegman={isDraggingPegman}
         />
 
-        {/* Static Markers
-        {staticLocations
-          .filter((loc) => !collectedItems.includes(loc.accessoryId)) // hide collected ones (uses global state)
-          .map((loc) => (
-            <Marker key={loc.id} position={loc.position}>
-              <Popup className="custom-popup">
-                <div className="popup-content">
-                  <div className="title">{loc.title}</div>
-                </div>
-
-
-                <div className="section">
-                    <div className= "info">
-                      
-                      <div style={{ textAlign: "center" }}>
-                        <img 
-                          src={loc.img}
-                          alt={loc.title}
-                          style={{
-                            width: "80px",
-                            marginLeft: "auto",
-                            marginRight: "auto"
-                          }}
-                        />
-                      </div>
-
-                      {loc.description}
-
-                      <br></br>
-                      
-                    </div>
-                </div>
-                
-                
-              </Popup>
-            </Marker>
-        ))} */}
 
         {/* Admin Added Markers */}
         {markers.map((loc, i) => (
