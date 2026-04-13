@@ -11,13 +11,17 @@ import ClickHandler from "../components/ClickHandler"
 const DEV_MODE = false;
 
 // Lets map pan to the currrent user location
-function RecenterMap({ position, shouldCenter }) {
+function RecenterMap({ position }) {
   const map = useMap();
 
   useEffect(() => {
-    if (!position || !shouldCenter) return;
-    map.setView(position, map.getZoom());
-  }, [position, shouldCenter, map]);
+    if (!position) return;
+
+    map.setView(position, map.getZoom(), {
+      animate: true,
+      duration: 0.8,
+    });
+  }, [position, map]);
 
   return null;
 }
@@ -51,7 +55,7 @@ function getDistanceMeters(lat1, lng1, lat2, lng2){
       Math.cos(toRad(lat2)) * 
       Math.sin(dLng / 2) ** 2;
 
-  const c = 2 * Math.atan(Math.sqrt(a), Math.sqrt(1 - a));
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
   return R * c;
 }
@@ -74,6 +78,18 @@ function getDistanceMeters(lat1, lng1, lat2, lng2){
 
 export default function MapScreen({ user, userId, collectedItems, setCollectedItems })
 {
+
+  const handleRefreshLocation = () => {
+    if (!liveLocation) {
+      setMessage("📡 Waiting for GPS...");
+      return;
+    }
+
+    setPegmanPosition([...liveLocation]);
+    setMessage("📍 Recentered to Pegman!");
+  };
+
+
 
   async function loadMarkers() {
     try {
@@ -155,68 +171,6 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
   const [locationLoading, setLocationLoading] = useState(true);
   const [hasCenteredOnce, setHasCenteredOnce] = useState(false);
 
-  // ------------------------------------------------------------------------
-  // Static locations for item drops
-  // Need to turn it into state to update "collected"
-  const [staticLocations, setStaticLocations] = useState([
-    {
-      id: 1,
-      position: [43.03881471145394, -71.45190238952638],
-      title: "Crown",
-      description: "Collect your crown at the library!",
-      img: "/Roamie-Crown-2.png",
-      accessoryId: "hat_crown",
-      radius: 30,   // 30 meters
-      collected: false
-    },
-    {
-      id: 2,
-      position: [43.039763539565556, -71.45380139350893],
-      title: "Flower",
-      description: "Flower Power Drop!!!",
-      img: "/Roamie-Flower.png",
-      accessoryId: "hat_flower",
-      radius: 30,
-      collected: false
-    },
-    {
-      id: 3,
-      position: [43.038673562216715, -71.45618319511415],
-      title: "Dumbbell",
-      description: "Collect this limited edition dumbbell!",
-      img: "/Roamie-Dumbbell-2.png",
-      accessoryId: "outside_dumbbell",
-      radius: 30,
-    },
-    {
-      id: 4,
-      position: [43.03951261124411, -71.45159125328065],
-      title: "Santa Hat",
-      description: "Santa hat drop!!!",
-      img: "/Roamie-SantaHat.png",
-      accessoryId: "hat_santahat",
-      radius: 30,
-
-    },
-    {
-      id: 5,
-      position: [43.04064962199054, -71.4509153366089],
-      title: "Coat",
-      description: "Stay warm and collect this fluffy coat!!!",
-      img: "/Roamie-Coat-2.png",
-      accessoryId: "body_coat",
-      radius: 30,
-    },
-    {
-      id: 6,
-      position: [43.04091622835737, -71.45213842391969],
-      title: "Shield",
-      description: "Collect this Shiny Shield!!!",
-      img: "/Roamie-Shield-2.png",
-      accessoryId: "outside_shield",
-      radius: 30,
-    }
-  ]);
 
   useEffect(() => {
     if (!navigator.geolocation) {
@@ -224,6 +178,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
       setLocationLoading(false);
       return;
     }
+  
 
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
@@ -236,9 +191,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
         setLocationError("");
         setLocationLoading(false);
 
-        if (!hasCenteredOnce) {
-          setHasCenteredOnce(true);
-        }
+      
 
         console.log("Live location:", coords);
       },
@@ -260,15 +213,25 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 2000,
+        timeout: 12000,
+        
       }
     );
 
     return () => {
       navigator.geolocation.clearWatch(watchId);
     };
-  }, [hasCenteredOnce]);
+  }, []);
+
+  useEffect(() => {
+    if (!liveLocation) return;
+
+    const timer = setTimeout(() => {
+      handleRefreshLocation();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [liveLocation]);
 
   // This checks to see if you collected an item everytime the map rerenders
   // useEffect(() => {
@@ -335,7 +298,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
       console.log("DISTANCE:", dist);
 
       // Pickup radius based on user location
-      if (dist < 100 && !collectedIds.has(marker.id)){
+      if (dist < marker.radius && !collectedIds.has(marker.id)) {
 
         if (!marker.item_id) return;
         
@@ -349,7 +312,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
           return updated;
         });
 
-        setTimeout(() => setMessage(`🎉 You've collected the ${markers.name}!!`), 2000);
+        setTimeout(() => setMessage(`🎉 You've collected the ${marker.name}!!`), 2000);
       }
     });
   }, [liveLocation, markers, collectedIds]);
@@ -429,88 +392,12 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
   }
 
   const handleMapClick = async (latlng) => {
+    if (user?.is_admin) return;
 
-    // Stops it from marking up spot after clicking "done"
-    // if (isDone) return;
-
-    // Check Wi-Fi before making API calls (if there is none, have an error message)
     if (!navigator.onLine) {
       setMessage("📡 No internet connection");
       return;
     }
-
-    const info = prompt("Name this place:");
-    if (!info) return;
-
-    // Get the main/basic info fast
-    const basicInfo = await getHumanReadableInfo(latlng.lat, latlng.lng);
-
-    // // Make temporary maker
-    // const newPlace = {
-    //   id: Date.now(),
-    //   latlng,
-    //   info,
-    //   locationInfo: basicInfo,
-    //   // weather: null,
-    //   // wiki: null,
-    //   // loading: true
-    // }
-
-    await apiAddMarker(latlng.lat, latlng.lng, selectedItem);
-
-    // Add this information immediately to the map
-    // setMarkers((prev) => [
-    //   ...prev,
-    //   {
-    //     latlng: [latlng.lat, latlng.lng]
-    //   }
-    // ]);
-
-
-    // Check Wi-Fi before making API calls (if there is none, have an error message)
-    // if (!navigator.onLine) {
-    //   setLocations((prev) =>
-    //     prev.map((loc) =>
-    //       loc.id === newPlace.id
-    //         ? {
-    //             ...loc,
-    //             // loading: false,
-    //             // Note: notice how there is a new variable that stores error messages
-    //             error: "Cannot retrieve information... \ncheck your Wi-Fi connection.",
-    //           }
-    //         : loc
-    //     )
-    //   );
-    //   return; // stop here, don’t call APIs
-    // }
-  
-    // Fetch the slower stuff in the background
-    // try {
-    //   const [weather, wiki] = await Promise.all([
-    //     getWeather(latlng.lat, latlng.lng),
-    //     getWikidataInfoByCoords(latlng.lat, latlng.lng)
-    //   ]);
-    //   setLocations((prev) =>
-    //     prev.map((loc) =>
-    //       loc.id === newPlace.id
-    //       ? {...loc, weather, wiki, loading: false}
-    //       : loc
-    //     )
-    //   );
-
-    // } catch (err) {
-    //   console.error("Error loading the extra info", err);
-    //     setLocations((prev) =>
-    //       prev.map((loc) =>
-    //         loc.id === newPlace.id
-    //         ? { ...loc, weather: null, wiki: null, loading: false}
-    //         : loc
-    //     )
-    //   );
-
-    // }
-
-
   };
 
   async function handleAddMarker(lat, lng) {
@@ -527,28 +414,18 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
     }
   }
 
-  
-  // Adds the edit and delete buttons next to the side bar elements
-  const handleEdit = (id) => {
-    const newInfo = prompt("Rename this place: ")
-    if (newInfo){
-      setLocations(prev =>
-        prev.map(loc =>
-          loc.id === id ? { ...loc, info: newInfo } : loc
-        )
-      );
-    }
-  };
-  const handleDelete = (id) => {
-    // Filter out the locations without that id
-    setLocations(prev => prev.filter(loc => loc.id !== id))
-    setUiLocked(false); // unlock the map
-  };
+
 
   return (
     
 
     <div style={{ height: '100vh', width: '100vw'}}>
+
+      <button className="locate-btn" onClick={handleRefreshLocation}>
+        Recenter to pegman📍
+      </button>
+
+      <div className="map-tint"></div>
 
         {locationLoading && (
           <div className="proximity-alert">
@@ -604,11 +481,11 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
         {/* This is where the map lives */}
         <MapContainer
           center={mapCenter} // coordinates
-          zoom={16}
+          zoom={19}
           style={{ height: '100%', width: '100%'}}
         >
         
-        <RecenterMap position={pegmanPosition} shouldCenter={hasCenteredOnce} />
+        <RecenterMap position={pegmanPosition} />
 
         {/* TileLayer defines the source of the map imagery */}
         <TileLayer

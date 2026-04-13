@@ -599,6 +599,14 @@ button.delete:hover {
 }
 
 
+.map-tint {
+  position: absolute;
+  inset: 0;
+  background: rgba(221, 0, 255, 0.03);
+  pointer-events: none;
+  z-index: 400;
+}
+
 /* Message from the avatar */
 .avatar-message {
   position: absolute;
@@ -770,4 +778,33 @@ button.delete:hover {
   display: flex;
   gap: 12px;
   margin-bottom: 14px;
+}
+
+
+
+.locate-btn {
+  position: absolute;
+  bottom: 100px;
+  right: 25px;
+  z-index: 1000;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: none;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+  white-space: nowrap;
+  width: auto;
+  height: auto;
+}
+
+
+.locate-btn:hover {
+  box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+}
+
+.locate-btn:active {
+  transform: scale(0.92);
 }
