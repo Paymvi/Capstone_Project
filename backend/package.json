@@ -11,9 +11,6 @@
     "testEnvironment": "node",
     "transform": {}
   },
-  {
-    "type": "module"
-  },
   "keywords": [],
   "author": "",
   "license": "ISC",
