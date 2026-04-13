@@ -792,12 +792,13 @@ button.delete:hover {
   border: none;
   background: white;
   box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-  font-size: 14px;
+  font-size: 12px;
   cursor: pointer;
   transition: transform 0.1s ease;
   white-space: nowrap;
   width: auto;
   height: auto;
+  font-weight: 500;
 }
 
 

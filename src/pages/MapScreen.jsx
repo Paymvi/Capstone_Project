@@ -431,7 +431,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
     <div style={{ height: '100vh', width: '100vw'}}>
 
       <button className="locate-btn" onClick={handleRefreshLocation}>
-        Recenter to pegman📍
+        Recenter📍
       </button>
 
       <div className="map-tint"></div>
