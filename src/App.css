@@ -808,3 +808,55 @@ button.delete:hover {
 .locate-btn:active {
   transform: scale(0.92);
 }
+
+
+
+
+/* PROFILE BADGES Section */
+.profile-badges {
+  margin-top: 20px;
+  padding: 0 16px;
+}
+
+.badges-header {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: white;
+}
+
+/* Horizontal scroll */
+.badges-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+
+/* Hide ugly scrollbar (optional) */
+.badges-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.badge-card {
+  min-width: 90px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.badge-img {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+}
+
+.badge-name {
+  font-size: 12px;
+  margin-top: 4px;
+  color: #ccc;
+}
+.badge-status {
+  font-size: 10px;
+  color: #a4a4a4;
+  margin-top: 2px;
+}

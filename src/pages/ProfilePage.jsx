@@ -3,7 +3,8 @@ import TAG_OPTIONS from "../utils/tags";
 import ReactCountryFlag from "react-country-flag";
 import { apiGetState  } from "../api";
 
-export default function ProfilePage({ userId, collectedItems }) {
+
+export default function ProfilePage({ userId, collectedItems, setCollectedItems }) {
 
   const fileInputRef = useRef(null);
 
@@ -11,6 +12,35 @@ export default function ProfilePage({ userId, collectedItems }) {
   const [displayName, setDisplayName] = useState("Demo User");
   const [tag, setTag] = useState(TAG_OPTIONS[0]);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const totalCollected = [...new Set(collectedItems || [])].length;
+
+  const BADGES = [
+    {
+      id: "socialite",
+      img: "/badges/RR-Socialite-Badge.png",
+      name: "Socialite",
+      unlocked: false,
+    },
+    {
+      id: "hiker",
+      img: "/badges/RR-Hiker-Badge.png",
+      name: "Hiker",
+      unlocked: false,
+    },
+    {
+      id: "explorer",
+      img: "/badges/RR-Explorer-Badge.png",
+      name: "Explorer",
+      unlocked: false,
+    },
+    {
+      id: "collector",
+      img: "/badges/RR-Collector-Badge.png",
+      name: "Collector",
+      unlocked: totalCollected >= 5,
+      requirement: "Collect 5 items",
+    },
+  ];
 
   useEffect(() => {
     async function loadState() {
@@ -72,7 +102,7 @@ export default function ProfilePage({ userId, collectedItems }) {
             />    
           </div> 
 
-        </div>
+        </div> {/* Profile-left */}
       
 
         {/* RIGHT COLUMN */}
@@ -120,26 +150,59 @@ export default function ProfilePage({ userId, collectedItems }) {
 
           
 
-          {/* second row: funny tag */}
-          <div className="profile-pill">
-            <div className="pill-title">Today’s Energy</div>
+            {/* second row: funny tag */}
+            <div className="profile-pill">
+              <div className="pill-title">Today’s Energy</div>
 
-              <select
-                  className="tag-select"
-                  value={tag}
-                  onChange={(e) => setTag(e.target.value)}
-              >
-                  {TAG_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                      {option}
-                  </option>
-                  ))}
-              </select>
+                <select
+                    className="tag-select"
+                    value={tag}
+                    onChange={(e) => setTag(e.target.value)}
+                >
+                    {TAG_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                        {option}
+                    </option>
+                    ))}
+                </select>
 
             </div>
-          </div>
+          
+          
+        </div> {/* Profile-top-right */}
 
+      </div> {/* Profile-top */}
+
+        
+
+
+      {/* BADGES SECTION */}
+      <div className="profile-badges">
+
+        <div className="badges-header">Badges</div>
+
+        <div className="badges-scroll">
+          {BADGES.map((badge) => (
+            <div key={badge.id} className="badge-card">
+              <img
+                src={badge.img}
+                alt={badge.name}
+                className="badge-img"
+                style={{ opacity: badge.unlocked ? 1 : 0.3 }}
+              />
+              <div className="badge-name">
+                {badge.name}
+                {!badge.unlocked && <div className="badge-status">Locked</div>}
+              </div>
+              <div className="badge-status">
+                {badge.unlocked ? "Unlocked" : badge.requirement}
+              </div>
+            </div>
+          ))}
         </div>
+
+      </div>
+
 
 
 
