@@ -1,27 +1,63 @@
 import "./RaccoonIntro.css";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+
+const messages = [
+  "Welcome back, Explorer...",
+  "Ready to explore?",
+  "New discoveries await...",
+  "Let’s find something cool...",
+  "Adventure time!",
+];
 
 export default function RaccoonIntro({ onFinish }) {
+  const [message] = useState(() => {
+    const hasLoggedInBefore = localStorage.getItem("hasLoggedInBefore");
+
+    if(!hasLoggedInBefore){
+      // First time user
+      localStorage.setItem("hasLoggedInBefore", "true");
+      return "Welcome to Roamie! Let's start your adventure ✨✨";
+    }
+
+    // Returning user -> random message
+    return messages[Math.floor(Math.random() * messages.length)];
+  });
+
+  const [fadeOut, setFadeOut] = useState(false);
+
+  const isFirstTime = !localStorage.getItem("hasLoggedInBefore");
+  const duration = isFirstTime ? 4000 : 3000;
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      onFinish(); // go to map after animation
-    }, 2500); // duration
+      setFadeOut(true);  // start fade out
+    }, duration - 500); // duration
 
-    return () => clearTimeout(timer);
+    const navTimer = setTimeout(() => {
+      onFinish(); // go to map after animation
+    }, duration);
+
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(navTimer);
+    }
   }, []);
 
   return (
-    <div className="intro-overlay">
+    <div className={`intro-overlay ${fadeOut ? "fade-out" : ""}`}>
 
       {/* TEXT */}
       <div className="text-mask">
         <div className="intro-text">
-          Welcome back, Explorer...
+          {message}
         </div>
       </div>
 
       {/* RACCOON */}
       <img src="/Ray_Raccoon_Walking_Anims-0.png" className="raccoon-walk" />
+      <div className="sparkle sparkle-1">✨</div>
+      <div className="sparkle sparkle-2">✨</div>
+      <div className="sparkle sparkle-3">✨</div>
 
     </div>
   );

@@ -3,6 +3,14 @@
   inset: 0;
   background: #0b0c10;
   overflow: hidden;
+
+  opacity: 1;
+  transition: opacity 0.5s ease;
+}
+
+/* when fading */
+.intro-overlay.fade-out {
+  opacity: 0;
 }
 
 /* TEXT MASK (hides text until revealed) */
@@ -63,4 +71,36 @@
 @keyframes bounce {
   from { transform: translateY(-50%) translateY(0); }
   to   { transform: translateY(-50%) translateY(-4px); }
+}
+
+.sparkle {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  opacity: 0;
+
+  animation: sparkleTrail 2s linear infinite;
+}
+
+/* stagger them */
+.sparkle-1 { animation-delay: 0.2s; }
+.sparkle-2 { animation-delay: 0.5s; }
+.sparkle-3 { animation-delay: 0.8s; }
+
+@keyframes sparkleTrail {
+  0% {
+    left: calc(50% - 200px);
+    opacity: 0;
+    transform: translateY(-50%) scale(0.5);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-50%) scale(1.2);
+  }
+  100% {
+    left: calc(50% + 200px);
+    opacity: 0;
+    transform: translateY(-50%) scale(0.5);
+  }
 }
