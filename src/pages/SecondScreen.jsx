@@ -154,72 +154,65 @@ export default function SecondScreen({ userId, collectedItems, equipped, setEqui
     <div className="avatar-screen">
       <div className="room">
 
-        <div>
-          <br></br><br></br><br></br>
-        </div>
-
-        <h1>Welcome to the Avatar Screen</h1>
-
-
-
-        <div className="avatar-container">
-
-          <img 
-            src="/Roamie-Dog-2.png" 
-            width="230px"
-            onClick={() => speak("Welcome to Roamie!")}
-          ></img>
-
-          {message && (
-            <div className="avatar-message">
-              {message}
-            </div>
-          )}
-
-
-          {/* Accessory */}
-
-          {equipped.hat && (
-            <img
-              className="accessory accessory-hat"
-              src={ACCESSORIES.find(a => a.id === equipped.hat)?.src}
-              style={ACCESSORIES.find(a => a.id === equipped.hat)?.position}
-            />
-          )}
-
-          {equipped.body && (
-            <img
-              className="accessory accessory-body"
-              src={ACCESSORIES.find(a => a.id === equipped.body)?.src}
-              style={ACCESSORIES.find(a => a.id === equipped.body)?.position}
-            />
-          )}
-
-          {equipped.outside && (
-            <img
-              className="accessory accessory-outside"
-              src={ACCESSORIES.find(a => a.id === equipped.outside)?.src}
-              style={ACCESSORIES.find(a => a.id === equipped.outside)?.position}
-            />
-          )}
-
-
-        </div>
         
-      </div>
-    <div>
-      <AccessoriesPanel
-          items={unlockedAccessories}
-          equipped={equipped}
-          onSelect={toggleAccessory} // or equipAccessory
-      />
+          <div className="avatar-header">
+            {/* <h1>Welcome to the Avatar Screen</h1> */}
+          </div>
 
-      <div>
-        <br></br>
+          <div className="avatar-stage">
+            <div className="avatar-container">
+
+            <img 
+              src="/Roamie-Dog-2.png" 
+              width="230px"
+              onClick={() => speak("Welcome to Roamie!")}
+            ></img>
+
+            {message && (
+              <div className="avatar-message">
+                {message}
+              </div>
+            )}
+
+
+            {/* Accessory */}
+
+            {equipped.hat && (
+              <img
+                className="accessory accessory-hat"
+                src={ACCESSORIES.find(a => a.id === equipped.hat)?.src}
+                style={ACCESSORIES.find(a => a.id === equipped.hat)?.position}
+              />
+            )}
+
+            {equipped.body && (
+              <img
+                className="accessory accessory-body"
+                src={ACCESSORIES.find(a => a.id === equipped.body)?.src}
+                style={ACCESSORIES.find(a => a.id === equipped.body)?.position}
+              />
+            )}
+
+            {equipped.outside && (
+              <img
+                className="accessory accessory-outside"
+                src={ACCESSORIES.find(a => a.id === equipped.outside)?.src}
+                style={ACCESSORIES.find(a => a.id === equipped.outside)?.position}
+              />
+            )}
+
+
+          </div>
+        </div>
+
+        <AccessoriesPanel
+            items={unlockedAccessories}
+            equipped={equipped}
+            onSelect={toggleAccessory} // or equipAccessory
+        />
+    
       </div>
 
-      
-    </div>
     
   </div>
 

@@ -437,23 +437,26 @@ button.delete:hover {
 }
 
 .room {
-  /* height: 100vh; */
   flex: 1;
   width: 100%;
+  min-height: 80vh;
 
   text-align: center;
 
-  /* Gradient breakdown */
-  background: linear-gradient(
-    to bottom,
-    #f4efe6 0%,     /* wall color */
-    #f4efe6 35%,
-    #9c8262 35%,    /* floor color */
-    #9c8262 100%
-  );
+  background-image: url("/avatar-bg-screen-4.png");
+  background-size: fill;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-repeat: no-repeat;
 
   position: relative;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
+
+
 
 /* Bottom scrollable inventory */
 .accessory-panel {
@@ -476,6 +479,15 @@ button.delete:hover {
   background: white;
   border-top: 2px solid #ddd;
   
+}
+
+.accessory-panel {
+  position: relative;
+  bottom: 60px; /* adjust this number */
+
+  width: 25%;
+  margin: 0 auto;
+
 }
 
 /* 
@@ -536,11 +548,42 @@ button.delete:hover {
 }
 
 
+.avatar-container > img:first-child {
+  transform: translateY(-20px);
+}
 
 
-.avatar-container{
+.avatar-container {
   position: relative;
-  display: inline-block;
+
+  width: 320px;
+  height: 320px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.avatar-stage {
+  flex: 1;
+  width: 100%;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.avatar-header {
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+
+.avatar-header h1 {
+  background: rgba(255, 255, 255, 0.85);
+  padding: 12px 20px;
+  border-radius: 20px;
+  font-weight: 800;
+  font-size: 2rem;
 }
 
 /* Note: These will be overridden by the inline CSS */
@@ -928,3 +971,8 @@ button.delete:hover {
   display: flex;
   gap: 12px;
 }
+
+
+
+
+
