@@ -104,3 +104,22 @@
     transform: translateY(-50%) scale(0.5);
   }
 }
+
+.raccoon-sprite {
+  width: 80px;   /* size you want on screen */
+  height: 80px;
+
+  background-image: url("/Ray The Raccoon-walk.png");
+  background-repeat: no-repeat;
+
+  /* key: scale sprite sheet */
+  background-size: 500% 500%;
+
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+
+  animation: playSprite 1s steps(25) infinite,
+             walkAcross 3s linear forwards,
+             bounce 0.2s infinite alternate;
+}

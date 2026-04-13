@@ -54,7 +54,7 @@ export default function RaccoonIntro({ onFinish }) {
       </div>
 
       {/* RACCOON */}
-      <img src="/Ray_Raccoon_Walking_Anims-0.png" className="raccoon-walk" />
+      <div className="raccoon-sprite" />
       <div className="sparkle sparkle-1">✨</div>
       <div className="sparkle sparkle-2">✨</div>
       <div className="sparkle sparkle-3">✨</div>
