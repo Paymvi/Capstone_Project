@@ -12,7 +12,7 @@ export default function AdminPage() {
 
     const token = localStorage.getItem("token");
 
-    fetch("http://localhost:3000/me", {
+    fetch("http://localhost:5000/me", {
       headers: {
         Authorization: `Bearer ${token}`
       }
