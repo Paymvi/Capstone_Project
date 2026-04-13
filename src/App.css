@@ -598,6 +598,17 @@ button.delete:hover {
   100% { opacity: 0; }
 }
 
+.leaflet-tile {
+  filter: hue-rotate(260deg) saturate(2) brightness(0.9);
+}
+
+.map-tint {
+  position: absolute;
+  inset: 0;
+  background: rgba(221, 0, 255, 0.03);
+  pointer-events: none;
+  z-index: 400;
+}
 
 /* Message from the avatar */
 .avatar-message {

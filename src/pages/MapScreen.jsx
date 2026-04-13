@@ -550,6 +550,8 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
 
     <div style={{ height: '100vh', width: '100vw'}}>
 
+      <div className="map-tint"></div>
+
         {locationLoading && (
           <div className="proximity-alert">
             Finding your location...
@@ -604,7 +606,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
         {/* This is where the map lives */}
         <MapContainer
           center={mapCenter} // coordinates
-          zoom={16}
+          zoom={19}
           style={{ height: '100%', width: '100%'}}
         >
         
