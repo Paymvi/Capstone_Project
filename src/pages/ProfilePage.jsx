@@ -3,12 +3,6 @@ import TAG_OPTIONS from "../utils/tags";
 import ReactCountryFlag from "react-country-flag";
 import { apiGetState  } from "../api";
 
-const BADGES = [
-  { id: "socialite", img: "/badges/RR-Socialite-Badge.png", name: "Socialite" },
-  { id: "hiker", img: "/badges/RR-Hiker-Badge.png", name: "Hiker" },
-  { id: "explorer", img: "/badges/RR-Explorer-Badge.png", name: "Explorer" },
-  { id: "collector", img: "/badges/RR-Collector-Badge.png", name: "Collector" },
-];
 
 export default function ProfilePage({ userId, collectedItems, setCollectedItems }) {
 
@@ -18,6 +12,35 @@ export default function ProfilePage({ userId, collectedItems, setCollectedItems 
   const [displayName, setDisplayName] = useState("Demo User");
   const [tag, setTag] = useState(TAG_OPTIONS[0]);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const totalCollected = [...new Set(collectedItems || [])].length;
+
+  const BADGES = [
+    {
+      id: "socialite",
+      img: "/badges/RR-Socialite-Badge.png",
+      name: "Socialite",
+      unlocked: false,
+    },
+    {
+      id: "hiker",
+      img: "/badges/RR-Hiker-Badge.png",
+      name: "Hiker",
+      unlocked: false,
+    },
+    {
+      id: "explorer",
+      img: "/badges/RR-Explorer-Badge.png",
+      name: "Explorer",
+      unlocked: false,
+    },
+    {
+      id: "collector",
+      img: "/badges/RR-Collector-Badge.png",
+      name: "Collector",
+      unlocked: totalCollected >= 5,
+      requirement: "Collect 5 items",
+    },
+  ];
 
   useEffect(() => {
     async function loadState() {
@@ -161,8 +184,19 @@ export default function ProfilePage({ userId, collectedItems, setCollectedItems 
         <div className="badges-scroll">
           {BADGES.map((badge) => (
             <div key={badge.id} className="badge-card">
-              <img src={badge.img} alt={badge.name} className="badge-img" />
-              <div className="badge-name">{badge.name}</div>
+              <img
+                src={badge.img}
+                alt={badge.name}
+                className="badge-img"
+                style={{ opacity: badge.unlocked ? 1 : 0.3 }}
+              />
+              <div className="badge-name">
+                {badge.name}
+                {!badge.unlocked && <div className="badge-status">Locked</div>}
+              </div>
+              <div className="badge-status">
+                {badge.unlocked ? "Unlocked" : badge.requirement}
+              </div>
             </div>
           ))}
         </div>

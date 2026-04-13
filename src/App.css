@@ -855,3 +855,8 @@ button.delete:hover {
   margin-top: 4px;
   color: #ccc;
 }
+.badge-status {
+  font-size: 10px;
+  color: #a4a4a4;
+  margin-top: 2px;
+}
