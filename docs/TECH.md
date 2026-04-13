@@ -473,6 +473,31 @@ Jest will be used for unit testing and component tests. Jest is integral to our 
 
 While testing with Postman it will be significant for testing API routes because it provides a user-friendly UI. Enabling developers to comfortably write test scripts for their desired API. In addition, Postman allows developers to set up their own mock server to simulate their API endpoints, without directly editing their established or in-progress servers. 
 
+## Authentication & Validation
+
+The authentication system includes secure user registration and login using hashed passwords and JWT-based session management.
+
+Enhancements include:
+
+* Validation of user input using Zod schemas
+* Prevention of duplicate usernames at both application and database levels
+* Secure password storage using bcrypt hashing
+* Token-based authentication for protected routes
+
+Testing revealed and resolved an issue where duplicate usernames were not properly handled due to incorrect variable initialization order. This was corrected by validating and normalizing input before performing database checks.
+
+
+## Testing
+
+The backend was tested using Jest and Supertest. Test cases were designed to validate authentication, security protections, and system robustness.
+
+Key areas tested include:
+- SQL injection protection
+- Authentication validation
+- Rate limiting and abuse prevention
+- Account lockout mechanisms
+- Secure password hashing
+
 ## Engineering Decisions
 
 ### Why PostgreSQL over NoSQL?

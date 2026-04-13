@@ -4,12 +4,103 @@ import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import "./Login.css";
 
+// Validate Input 
+function calculatePasswordStrength(password){
+  let score = 0;
+  
+  // 1. Length check (foundation)
+  if(password.length >= 5){
+    score++;
+  }
+  else{
+    return 0;
+  }
+
+  // 2. Character variety
+  if(
+    /[A-Z]/.test(password) &&
+    /[a-z]/.test(password) &&
+    /[0-9]/.test(password)
+  )
+  {
+    score++
+  }
+
+  // 3. Extra security
+  if(password.length >= 12 || /[^A-Za-z0-9]/.test(password)) {
+    score++;
+  }
+
+  return score; //0-3
+}
+
+function PasswordStrengthBar({password, animate}){
+  const strength = calculatePasswordStrength(password);
+
+  const getColor = () => {
+    if (strength === 0) {
+      return "#ff4d4f";   // soft red
+    }
+    if (strength === 1) {
+      return "#faad14";   // amber
+    }
+    if (strength === 2) {return "#52c41a";   // green
+    }
+    return "#9900ff";  // purple (very strong)
+  };
+
+  const getLabel = () => {
+    if(strength === 0){
+      return "Weak";
+    }
+    if(strength === 1){
+      return "Fair";
+    }
+    if(strength === 2){
+      return "Strong";
+    }
+
+    return "Very Strong";
+  }
+
+  const width = (strength / 3) * 100;
+
+  return (
+    <div style={{ marginTop: "8px" }}>
+      <div
+        style={{
+          height: "8px",
+          width: "100%",
+          backgroundColor: "#ddd",
+          borderRadius: "5px",
+        }}
+      >
+        <div
+          style={{
+            height: "100%",
+            width: `${width}%`,
+            background: `linear-gradient(90deg, ${getColor()} 0%, #ffffff33 100%)`,
+            borderRadius: "5px",
+            transition: "width 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+            boxShadow: `0 0 8px ${getColor()}66`,
+          }}
+        />
+      </div>
+
+      <p style={{ marginTop: "4px", fontSize: "14px" }}>
+        {getLabel()}
+      </p>
+    </div>
+  );
+}
+
 export default function Login({ onLoggedIn }) {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [lockTime, setLockTime] = useState(0);
+  const [animate, setAnimate] = useState(false);
 
   //Initialize cooldown directly
   const [cooldown, setCooldown] = useState(() => {
@@ -30,6 +121,12 @@ export default function Login({ onLoggedIn }) {
   const isBlocked = cooldown > 0 || lockTime > 0;
 
   const barColor = lockTime > 0 ? "red" : "purple";
+
+  useEffect(() => {
+    setAnimate(true);
+    const timeout = setTimeout(() => setAnimate(false), 300);
+    return () => clearTimeout(timeout);
+  }, [password]);
 
   useEffect(() => {
     if(cooldown <= 0){
@@ -173,6 +270,7 @@ export default function Login({ onLoggedIn }) {
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Enter username"
               style={{ padding: 8 }}
+              maxLength={50}
             />
 
             <input 
@@ -180,11 +278,39 @@ export default function Login({ onLoggedIn }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
+              maxLength={50}
             />
+
+            <p style={{ frontSize: "12px", color: "#a5009f"}}>
+              {50 - password.length} characters remaining 
+            </p>
+
+            {password.length > 0 && (
+              <PasswordStrengthBar password={password} animate={animate}/>
+            )}
 
             {error && (
               <p style={{color: "red", marginBottom: "10px"}}>
                 {error}
+              </p>
+            )}
+
+
+            {username.length > 0 && username.length < 5 && (
+              <p style={{
+                fontSize: "12px",
+                color: username.length > 0 && username.length < 5 ? "red" : "#aaa"
+              }}>
+                Username must be 5–50 characters
+              </p>
+            )}
+
+            {password.length > 0 && password.length < 5 && (
+              <p style={{
+                fontSize: "12px",
+                color: password.length > 0 && password.length < 5 ? "red" : "#aaa"
+              }}>
+                Password must be 5–50 characters
               </p>
             )}
 
