@@ -900,3 +900,30 @@ button.delete:hover {
     transform: translate(-50%, 0);
   }
 }
+
+
+/* Admin toolbar + cards */
+.admin-card {
+  background: white;
+  padding: 8px;
+  border-radius: 8px;
+  border: 2.5px solid rgba(0,0,0,0.7);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}
+
+.admin-btn {
+  border: none;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.admin-toolbar {
+  position: absolute;
+  top: 25px;
+  left: 60px;
+  z-index: 1000;
+  display: flex;
+  gap: 12px;
+}
