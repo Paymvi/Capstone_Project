@@ -144,6 +144,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
   const [items, setItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState("");
   const [collectedIds, setCollectedIds] = useState(new Set());
+  const [showItemModal, setShowItemModal] = useState(false);
 
   const blueMarker = new L.Icon({
     iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -400,6 +401,14 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
     }
   };
 
+  function handleSelectItem(itemId) {
+    setSelectedItem(itemId);
+    setShowItemModal(false);
+  }
+  const selectedItemData = items.find(
+    (item) => String(item.item_id) === String(selectedItem)
+  );
+
   async function handleAddMarker(lat, lng) {
     try {
       if (!selectedItem) {
@@ -445,30 +454,139 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
           </div>
         )}
         
-        {/* This is where the dropdown UI will be added */}
+        
         {user?.is_admin && (
-          <div style={{
-            position: "absolute",
-            top: "10px",
-            left: "10px",
-            zIndex: 1000,
-            background: "white",
-            padding: "8px",
-            borderRadius: "8px"
-          }}>
-            <select
-              value={selectedItem}
-              onChange={(e) => setSelectedItem(e.target.value)}
+          <>
+            <div
+              style={{
+                position: "absolute",
+                top: "65px",
+                left: "60px",
+                zIndex: 1000,
+                background: "white",
+                padding: "8px",
+                borderRadius: "8px",
+                background: "white",
+                padding: "8px",
+                borderRadius: "8px",
+                border: "2.5px solid rgba(0,0,0,0.7)",
+                boxShadow: "0 6px 20px rgba(0,0,0,0.2)",
+              }}
             >
-              <option value="">Select Item</option>
+              <button
+                onClick={() => setShowItemModal(true)}
+                style={{
+                  border: "none",
+                  background: "#fff",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                }}
+              >
+                {selectedItemData
+                  ? `Selected: ${selectedItemData.name}`
+                  : "Select Item"}
+              </button>
+            </div>
 
-              {items.map(item => (
-                <option key={item.item_id} value={item.item_id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-          </div>
+            {showItemModal && (
+              <div
+                style={{
+                  position: "fixed",
+                  inset: 0,
+                  background: "rgba(0, 0, 0, 0.45)",
+                  zIndex: 2000,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "16px",
+                }}
+                onClick={() => setShowItemModal(false)}
+              >
+                <div
+                  style={{
+                    width: "100%",
+                    maxWidth: "500px",
+                    maxHeight: "80vh",
+                    overflowY: "auto",
+                    background: "white",
+                    borderRadius: "16px",
+                    padding: "16px",
+                    boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    <h3 style={{ margin: 0 }}>Select an Item</h3>
+
+                    <button
+                      onClick={() => setShowItemModal(false)}
+                      style={{
+                        border: "none",
+                        background: "transparent",
+                        fontSize: "18px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    {items.map((item) => (
+                      <button
+                        key={item.item_id}
+                        onClick={() => handleSelectItem(item.item_id)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
+                          width: "100%",
+                          textAlign: "left",
+                          border:
+                            String(selectedItem) === String(item.item_id)
+                              ? "2px solid #4f46e5"
+                              : "1px solid #ddd",
+                          background: "white",
+                          borderRadius: "12px",
+                          padding: "12px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          style={{
+                            width: "56px",
+                            height: "56px",
+                            objectFit: "contain",
+                            flexShrink: 0,
+                          }}
+                        />
+
+                        <div>
+                          <div style={{ fontWeight: "700", marginBottom: "4px" }}>
+                            {item.name}
+                          </div>
+
+                          <div style={{ fontSize: "13px", opacity: 0.75 }}>
+                            {item.description || "No description available."}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* Security Logs Button */}
