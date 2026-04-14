@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import "./Login.css";
+import RaccoonIntro from "../components/RaccoonIntro";
 
 // Validate Input 
 function calculatePasswordStrength(password){
@@ -101,6 +102,20 @@ export default function Login({ onLoggedIn }) {
   const [error, setError] = useState("");
   const [lockTime, setLockTime] = useState(0);
   const [animate, setAnimate] = useState(false);
+  const [showIntro, setShowIntro] = useState(false);
+  const [loginData, setLoginData] = useState(null);
+  const [fadeOut, setFadeOut] = useState(false);
+
+  // Handle events after user login
+  // const handleLogin = async () => {
+  //   await apiLogin();
+
+  //   setShowIntro(true);
+  // };
+
+  // if (showIntro) {
+  //   return <RaccoonIntro onFinish={() => navigate("/")} />;
+  // }
 
   //Initialize cooldown directly
   const [cooldown, setCooldown] = useState(() => {
@@ -121,6 +136,12 @@ export default function Login({ onLoggedIn }) {
   const isBlocked = cooldown > 0 || lockTime > 0;
 
   const barColor = lockTime > 0 ? "red" : "purple";
+
+  useEffect(() => {
+    setAnimate(true);
+    const timeout = setTimeout(() => setAnimate(false), 300);
+    return () => clearTimeout(timeout);
+  }, [password]);
 
   useEffect(() => {
     if(cooldown <= 0){
@@ -175,6 +196,7 @@ export default function Login({ onLoggedIn }) {
   //   }
   // }, [cooldown]);
 
+  // Handle events after user login
   async function handleLogin() {
     try {
 
@@ -186,9 +208,14 @@ export default function Login({ onLoggedIn }) {
 
       localStorage.setItem("token", data.token);
 
-      onLoggedIn(data.user.id);
+      //onLoggedIn(data.user.id);
 
-      navigate("/");
+      setLoginData(data);
+      setFadeOut(true); // start fade
+
+      setTimeout(() => {
+        setShowIntro(true); // THEN show animation
+      }, 500); // match CSS duration
 
     }
     catch (err){
@@ -244,8 +271,19 @@ export default function Login({ onLoggedIn }) {
     }
   };
 
+  if (showIntro && loginData) {
+    return (
+      <RaccoonIntro
+        onFinish={() => {
+          onLoggedIn(loginData.user.id); // NOW login happens
+          navigate("/");
+        }}
+      />
+    );
+  }
+
   return (
-    <div className="login-container">
+    <div className={`login-container ${fadeOut ? "fade-out" : ""}`}>
 
       {/* LEFT SIDE */}
       <div className="login-left">
@@ -264,6 +302,7 @@ export default function Login({ onLoggedIn }) {
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Enter username"
               style={{ padding: 8 }}
+              maxLength={50}
             />
 
             <input 
@@ -271,11 +310,39 @@ export default function Login({ onLoggedIn }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
+              maxLength={50}
             />
+
+            <p style={{ frontSize: "12px", color: "#a5009f"}}>
+              {50 - password.length} characters remaining 
+            </p>
+
+            {password.length > 0 && (
+              <PasswordStrengthBar password={password} animate={animate}/>
+            )}
 
             {error && (
               <p style={{color: "red", marginBottom: "10px"}}>
                 {error}
+              </p>
+            )}
+
+
+            {username.length > 0 && username.length < 5 && (
+              <p style={{
+                fontSize: "12px",
+                color: username.length > 0 && username.length < 5 ? "red" : "#aaa"
+              }}>
+                Username must be 5–50 characters
+              </p>
+            )}
+
+            {password.length > 0 && password.length < 5 && (
+              <p style={{
+                fontSize: "12px",
+                color: password.length > 0 && password.length < 5 ? "red" : "#aaa"
+              }}>
+                Password must be 5–50 characters
               </p>
             )}
 
@@ -318,6 +385,7 @@ export default function Login({ onLoggedIn }) {
             />
         </div>
       </div>
+      <div className={`fade-overlay ${fadeOut ? "active" : ""}`} />
     </div>
   );
 }

@@ -101,3 +101,19 @@
   background: rgb(179, 0, 255);
   transition: width 1s linear;
 }
+
+.fade-overlay {
+  position: fixed;
+  inset: 0;
+  background: black;
+
+  opacity: 0;
+  pointer-events: none;
+
+  transition: opacity 0.5s ease;
+  z-index: 9999;
+}
+
+.fade-overlay.active {
+  opacity: 1;
+}
