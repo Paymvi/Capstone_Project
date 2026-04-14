@@ -104,7 +104,7 @@ export default function Login({ onLoggedIn }) {
   const [animate, setAnimate] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
   const [loginData, setLoginData] = useState(null);
-  const [animate, setAnimate] = useState(false);
+  const [fadeOut, setFadeOut] = useState(false);
 
   // Handle events after user login
   // const handleLogin = async () => {
@@ -211,7 +211,11 @@ export default function Login({ onLoggedIn }) {
       //onLoggedIn(data.user.id);
 
       setLoginData(data);
-      setShowIntro(true);
+      setFadeOut(true); // start fade
+
+      setTimeout(() => {
+        setShowIntro(true); // THEN show animation
+      }, 500); // match CSS duration
 
     }
     catch (err){
@@ -279,7 +283,7 @@ export default function Login({ onLoggedIn }) {
   }
 
   return (
-    <div className="login-container">
+    <div className={`login-container ${fadeOut ? "fade-out" : ""}`}>
 
       {/* LEFT SIDE */}
       <div className="login-left">
@@ -381,6 +385,7 @@ export default function Login({ onLoggedIn }) {
             />
         </div>
       </div>
+      <div className={`fade-overlay ${fadeOut ? "active" : ""}`} />
     </div>
   );
 }

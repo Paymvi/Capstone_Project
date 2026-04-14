@@ -9,11 +9,16 @@ const messages = [
   "Adventure time!",
 ];
 
+const TOTAL_FRAMES = 25;
+const COLS = 5;
+const hasLoggedInBefore = localStorage.getItem("hasLoggedInBefore");
+const isFirstTime = !hasLoggedInBefore;
+const duration = isFirstTime ? 4000 : 3000;
+
 export default function RaccoonIntro({ onFinish }) {
   const [message] = useState(() => {
-    const hasLoggedInBefore = localStorage.getItem("hasLoggedInBefore");
 
-    if(!hasLoggedInBefore){
+    if(isFirstTime){
       // First time user
       localStorage.setItem("hasLoggedInBefore", "true");
       return "Welcome to Roamie! Let's start your adventure ✨✨";
@@ -24,27 +29,38 @@ export default function RaccoonIntro({ onFinish }) {
   });
 
   const [fadeOut, setFadeOut] = useState(false);
+  const [frame, setFrame] = useState(0);
 
-  const isFirstTime = !localStorage.getItem("hasLoggedInBefore");
-  const duration = isFirstTime ? 4000 : 3000;
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setFrame((prev) => (prev + 1) % TOTAL_FRAMES);
+    }, 40); // speed (lower = faster)
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setFadeOut(true);  // start fade out
-    }, duration - 500); // duration
+      setFadeOut(true);
+    }, duration - 500);
 
     const navTimer = setTimeout(() => {
-      onFinish(); // go to map after animation
+      onFinish();
     }, duration);
 
     return () => {
       clearTimeout(timer);
       clearTimeout(navTimer);
-    }
-  }, []);
+    };
+  }, [onFinish]);
+
+  const col = frame % COLS;
+  const row = Math.floor(frame / COLS);
+
+  const FRAME_SIZE = 256; // adjust to your actual size
 
   return (
-    <div className={`intro-overlay ${fadeOut ? "fade-out" : ""}`}>
+    <div className="intro-overlay">
 
       {/* TEXT */}
       <div className="text-mask">
@@ -54,10 +70,17 @@ export default function RaccoonIntro({ onFinish }) {
       </div>
 
       {/* RACCOON */}
-      <div className="raccoon-sprite" />
+      <div
+        className="raccoon-sprite"
+        style={{
+          backgroundPosition: `-${col * FRAME_SIZE}px -${row * FRAME_SIZE}px`,
+        }}
+      />
       <div className="sparkle sparkle-1">✨</div>
       <div className="sparkle sparkle-2">✨</div>
       <div className="sparkle sparkle-3">✨</div>
+
+      <div className={`fade-overlay ${fadeOut ? "active" : ""}`} />
 
     </div>
   );

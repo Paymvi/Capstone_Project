@@ -1,16 +1,28 @@
 .intro-overlay {
   position: fixed;
   inset: 0;
-  background: #0b0c10;
-  overflow: hidden;
 
-  opacity: 1;
-  transition: opacity 0.5s ease;
+  background: #0b0c10; 
+
+  overflow: hidden;
 }
 
-/* when fading */
-.intro-overlay.fade-out {
+.fade-overlay {
+  position: fixed;
+  inset: 0;
+
+  background-color: #000000 !important; /* force black */
+
   opacity: 0;
+  pointer-events: none;
+
+  transition: opacity 0.5s ease;
+
+  z-index: 99999; /* VERY important */
+}
+
+.fade-overlay.active {
+  opacity: 1;
 }
 
 /* TEXT MASK (hides text until revealed) */
@@ -106,20 +118,18 @@
 }
 
 .raccoon-sprite {
-  width: 80px;   /* size you want on screen */
-  height: 80px;
+  width: 256px;
+  height: 256px;
 
-  background-image: url("/Ray The Raccoon-walk.png");
+  background-image: url("/Ray_The_Raccoon-walk.png");
   background-repeat: no-repeat;
 
-  /* key: scale sprite sheet */
-  background-size: 500% 500%;
+  background-size: 1280px 1280px; /* MUST match image size */
 
   position: absolute;
   top: 50%;
+  left: -256px; /* start off screen */
   transform: translateY(-50%);
 
-  animation: playSprite 1s steps(25) infinite,
-             walkAcross 3s linear forwards,
-             bounce 0.2s infinite alternate;
+  animation: walkAcross 4s linear forwards;
 }
