@@ -1,4 +1,4 @@
-import { useState, useEffect} from "react";
+import { useState, useEffect, useMemo } from "react";
 import 'leaflet/dist/leaflet.css';
 import { useNavigate } from "react-router-dom";
 
@@ -6,6 +6,10 @@ import { apiSetEquipped } from "../api";
 const DEV_MODE = true;
 
 export default function SecondScreen({ userId, collectedItems, equipped, setEquipped }) {
+
+  const [message, setMessage] = useState(null);
+  const [showCustomizeModal, setShowCustomizeModal] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("all");
 
   const navigate = useNavigate();
 
@@ -63,6 +67,10 @@ export default function SecondScreen({ userId, collectedItems, equipped, setEqui
   const unlockedAccessories = ACCESSORIES.filter(item =>
     collectedItems.includes(item.id)
   );
+  const filteredAccessories = useMemo(() => {
+    if (activeCategory === "all") return unlockedAccessories;
+    return unlockedAccessories.filter(item => item.type === activeCategory);
+  }, [unlockedAccessories, activeCategory]);
 
   function equipAccessory(item) {
     setEquipped(prev => ({
@@ -96,10 +104,18 @@ export default function SecondScreen({ userId, collectedItems, equipped, setEqui
   }
 
   function AccessoriesPanel({ items, equipped, onSelect }) {
+    if (!items.length) {
+      return (
+        <div className="accessory-empty-state">
+          <div className="accessory-empty-icon">🎒</div>
+          <p>No accessories in this category yet.</p>
+        </div>
+      );
+    }
+
     return (
       <div className="accessory-panel">
         {items.map(item => {
-          // const isEquipped = equipped[item.type]?.id === item.id;
           const isEquipped = equipped[item.type] === item.id;
 
           return (
@@ -109,18 +125,28 @@ export default function SecondScreen({ userId, collectedItems, equipped, setEqui
               onClick={() => onSelect(item)}
               type="button"
             >
-              <img src={item.src} alt={item.name} />
+              <div className="accessory-thumb-wrap">
+                <img src={item.src} alt={item.name} />
+              </div>
+
+              <div className="accessory-meta">
+                <span className="accessory-name">{item.name}</span>
+                <span className="accessory-type">
+                  {item.type === "hat" && "Hat"}
+                  {item.type === "body" && "Outfit"}
+                  {item.type === "outside" && "Item"}
+                </span>
+              </div>
+
+              {isEquipped && <span className="equipped-badge">Equipped</span>}
             </button>
           );
         })}
       </div>
-      
     );
   }
 
-  // ------------ animalese message ------------------
 
-  const [message, setMessage] = useState(null);
 
   useEffect(() => {
     if (!message) return;
@@ -158,6 +184,22 @@ export default function SecondScreen({ userId, collectedItems, equipped, setEqui
           <div className="avatar-header">
             {/* <h1>Welcome to the Avatar Screen</h1> */}
           </div>
+
+          <button
+            className="customize-avatar-btn"
+            onClick={() => setShowCustomizeModal(true)}
+            type="button"
+          >
+            Customize Avatar
+          </button>
+
+          <button
+            className="customize-avatar-btn"
+            onClick={() => setShowCustomizeModal(true)}
+            type="button"
+          >
+            Customize Avatar
+          </button>
 
           <div className="avatar-stage">
             <div className="avatar-container">
@@ -205,11 +247,114 @@ export default function SecondScreen({ userId, collectedItems, equipped, setEqui
           </div>
         </div>
 
-        <AccessoriesPanel
-            items={unlockedAccessories}
-            equipped={equipped}
-            onSelect={toggleAccessory} // or equipAccessory
-        />
+
+        {showCustomizeModal && (
+          <div
+            className="avatar-modal-overlay"
+            onClick={() => setShowCustomizeModal(false)}
+          >
+            <div
+              className="avatar-modal"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="avatar-modal-top">
+                {/* <div>
+                  <p className="avatar-modal-kicker">Roamie Wardrobe</p>
+                  <h2>Customize your avatar</h2>
+                  <p className="avatar-modal-subtitle">
+                    Mix hats, outfits, and items you’ve unlocked.
+                  </p>
+                </div> */}
+
+                <button
+                  className="avatar-modal-close"
+                  onClick={() => setShowCustomizeModal(false)}
+                  type="button"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="avatar-preview-card">
+                <div className="avatar-preview-mini">
+                  <img
+                    src="/Roamie-Dog-2.png"
+                    alt="Roamie preview"
+                    className="avatar-preview-base"
+                  />
+
+                  {equipped.hat && (
+                    <img
+                      className="accessory accessory-hat"
+                      src={ACCESSORIES.find(a => a.id === equipped.hat)?.src}
+                      style={ACCESSORIES.find(a => a.id === equipped.hat)?.position}
+                    />
+                  )}
+
+                  {equipped.body && (
+                    <img
+                      className="accessory accessory-body"
+                      src={ACCESSORIES.find(a => a.id === equipped.body)?.src}
+                      style={ACCESSORIES.find(a => a.id === equipped.body)?.position}
+                    />
+                  )}
+
+                  {equipped.outside && (
+                    <img
+                      className="accessory accessory-outside"
+                      src={ACCESSORIES.find(a => a.id === equipped.outside)?.src}
+                      style={ACCESSORIES.find(a => a.id === equipped.outside)?.position}
+                    />
+                  )}
+                </div>
+
+                {/* <div className="avatar-preview-text">
+                  <h3>Current Look</h3>
+                  <p>
+                    Tap any accessory below to equip or unequip it.
+                  </p>
+                </div> */}
+              </div>
+
+              <div className="accessory-filters">
+                <button
+                  className={activeCategory === "all" ? "active" : ""}
+                  onClick={() => setActiveCategory("all")}
+                  type="button"
+                >
+                  All
+                </button>
+                <button
+                  className={activeCategory === "hat" ? "active" : ""}
+                  onClick={() => setActiveCategory("hat")}
+                  type="button"
+                >
+                  Hats
+                </button>
+                <button
+                  className={activeCategory === "body" ? "active" : ""}
+                  onClick={() => setActiveCategory("body")}
+                  type="button"
+                >
+                  Outfits
+                </button>
+                <button
+                  className={activeCategory === "outside" ? "active" : ""}
+                  onClick={() => setActiveCategory("outside")}
+                  type="button"
+                >
+                  Items
+                </button>
+              </div>
+
+              <AccessoriesPanel
+                items={filteredAccessories}
+                equipped={equipped}
+                onSelect={toggleAccessory}
+              />
+            </div>
+          </div>
+        )}
     
       </div>
 
