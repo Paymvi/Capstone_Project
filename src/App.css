@@ -435,142 +435,330 @@ button.delete:hover {
   flex-direction: column;
   height: 100vh;
 }
-
 .room {
-  /* height: 100vh; */
   flex: 1;
   width: 100%;
-
+  min-height: 100vh;
   text-align: center;
 
-  /* Gradient breakdown */
-  background: linear-gradient(
-    to bottom,
-    #f4efe6 0%,     /* wall color */
-    #f4efe6 35%,
-    #9c8262 35%,    /* floor color */
-    #9c8262 100%
-  );
+  background-image: url("/avatar-bg-screen-4.png");
+  background-size: cover;
+  background-position: center bottom;
+  background-repeat: no-repeat;
 
   position: relative;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  padding: 20px 20px 28px;
+  box-sizing: border-box;
 }
 
-/* Bottom scrollable inventory */
-.accessory-panel {
-  /* height: 250px; */
-  /* grid-auto-rows: 1fr; */
-  grid-auto-rows: minmax(0, 1fr);
+.avatar-stage {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 8px;
+}
 
-  /* Make it take the middle 25% of the page */
-  width: 25%;
-  margin: 0 auto;
+.avatar-container {
+  position: relative;
+  width: 320px;
+  height: 320px;
 
-  overflow-y: auto; /*vertical scroll*/
-  overflow-x: auto;
-  
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  flex: 0 0 auto;
+}
+
+.avatar-container > img:first-child {
+  width: 230px;
+  display: block;
+}
+.accessory {
+  z-index: 2;
+}
+
+.customize-avatar-btn {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: 20;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  padding: 12px 18px;
+
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(14px);
+  color: #1c1c1c;
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+
+  transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+}
+
+.customize-avatar-btn:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.customize-avatar-btn:active {
+  transform: scale(0.98);
+}
+
+.accessory {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.avatar-customizer-shell {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.avatar-customizer {
+  width: min(920px, 96vw);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  padding: 18px;
+  border-radius: 30px;
+
+  background: linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(246,248,255,0.96) 100%);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.6);
+
+  box-shadow:
+    0 18px 45px rgba(0,0,0,0.16),
+    inset 0 1px 0 rgba(255,255,255,0.75);
+}
+
+.avatar-customizer-top h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  line-height: 1.05;
+  font-weight: 900;
+  color: #1a1d29;
+}
+
+.accessory-filters {
+  display: flex;
+  flex-wrap: wrap;
   gap: 10px;
-  padding: 10px;
-
-  background: white;
-  border-top: 2px solid #ddd;
-  
+  /* justify-content: center; */
 }
 
-/* 
+.accessory-filters button {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: #eef1f8;
+  color: #445;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.12s ease, color 0.12s ease;
+}
+
+.accessory-filters button:hover {
+  transform: translateY(-1px);
+  background: #e5eaf5;
+}
+
+.accessory-filters button.active {
+  background: linear-gradient(180deg, #2f6fff 0%, #2459d6 100%);
+  color: white;
+  box-shadow: 0 8px 18px rgba(47, 111, 255, 0.28);
+}
+
 .accessory-panel {
-  height: 200px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
 
-  width: 30%;
-  margin: 0 auto;
-
+  max-height: 340px;
   overflow-y: auto;
-  overflow-x: auto;
-  
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  padding: 10px;
-
-  background: white;
-  border-top: 2px solid #ddd;
+  padding-right: 4px;
 }
 
-*/
+.accessory-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.accessory-panel::-webkit-scrollbar-thumb {
+  background: rgba(122, 127, 148, 0.28);
+  border-radius: 999px;
+}
 
 .accessory-item {
-  /* border: 5px solid red !important; */
+  position: relative;
   aspect-ratio: 1 / 1;
   width: 100%;
 
-  max-width: 600px;
-
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 10px;
 
-  background: #f5f5f5;
-  border-radius: 12px;
-  border: 2px solid transparent;
+  padding: 14px;
+  border: 1px solid rgba(122, 127, 148, 0.18);
+  border-radius: 22px;
 
+  background: linear-gradient(180deg, #ffffff 0%, #f5f7ff 100%);
   cursor: pointer;
-  padding: 10px;
 
-  overflow: hidden; /* prevents expansion */
+  transition:
+    transform 0.14s ease,
+    box-shadow 0.14s ease,
+    border-color 0.14s ease,
+    background 0.14s ease;
 }
 
-.accessory-item img {
-  width: 30%;
-  height: 30%;
-  object-fit: contain; 
-  display: block;
-}
-
-.accessory{
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  pointer-events: none;
-  
-}
-
-
-
-
-.avatar-container{
-  position: relative;
-  display: inline-block;
-}
-
-/* Note: These will be overridden by the inline CSS */
-.accessory-hat { bottom: 77%; height: 40px; left: 44% }
-.accessory-body { bottom: 8%; height: 90px; left: 45%}
-.accessory-outside { bottom: 10%; height: 100px; left: 65%}
-
-
-
-/* For Extra responsiveness */
 .accessory-item:hover {
-  background-color: #e8e8e8;
-  transform: translateY(-1px); /* subtle lift on hover */
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-  transition: all 0.12s ease;
-
-  box-shadow: 0 2px 18px rgba(0, 0, 0, 0.15);
-  border: 2px solid #55853a;
+  transform: translateY(-3px);
+  border-color: rgba(47, 111, 255, 0.22);
+  box-shadow: 0 16px 30px rgba(31, 41, 55, 0.1);
+  background: linear-gradient(180deg, #ffffff 0%, #eef4ff 100%);
 }
 
 .accessory-item:active {
-  transform: scale(0.97);
+  transform: scale(0.98);
+}
+
+.accessory-thumb-wrap {
+  width: 76px;
+  height: 76px;
+  border-radius: 18px;
+  background: radial-gradient(circle at top, #ffffff 0%, #edf2ff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.accessory-item img {
+  width: 70%;
+  height: 70%;
+  object-fit: contain;
+  display: block;
+}
+
+.accessory-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+}
+
+.accessory-name {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #202432;
+}
+
+.accessory-type {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #7a7f94;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.equipped-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  background: linear-gradient(180deg, #34c759 0%, #23a846 100%);
+  color: white;
+  box-shadow: 0 8px 18px rgba(52, 199, 89, 0.28);
 }
 
 .accessory-item.equipped {
-  border: 2px solid #4CAF50;
-  box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
-  background: #f0fff4;
+  border-color: rgba(52, 199, 89, 0.45);
+  background: linear-gradient(180deg, #ffffff 0%, #effff4 100%);
+  box-shadow: 0 16px 26px rgba(52, 199, 89, 0.14);
 }
 
+.accessory-empty-state {
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef3ff 100%);
+  color: #667085;
+  text-align: center;
+}
+
+.accessory-empty-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 700px) {
+  .avatar-modal {
+    width: 95vw;
+    max-height: 90vh;
+    padding: 18px;
+    border-radius: 24px;
+  }
+
+  .avatar-modal-top {
+    align-items: flex-start;
+  }
+
+  .avatar-preview-card {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .avatar-preview-mini {
+    width: 140px;
+    height: 140px;
+  }
+
+  .accessory-panel {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .customize-avatar-btn {
+    top: 16px;
+    right: 16px;
+    padding: 10px 14px;
+    font-size: 0.88rem;
+  }
+}
 
 
 
@@ -928,3 +1116,8 @@ button.delete:hover {
   display: flex;
   gap: 12px;
 }
+
+
+
+
+
