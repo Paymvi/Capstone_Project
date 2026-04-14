@@ -12,6 +12,8 @@ const DEV_MODE = false;
 
 import BackgroundMusic from "./components/BackgroundMusic"
 
+import RaccoonIntro from "./components/RaccoonIntro";
+
 import AdminPage from "./pages/AdminPage";
 import Login from "./pages/Login";
 import MapScreen from "./pages/MapScreen"
@@ -56,6 +58,8 @@ function TabBar() {
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
+  const [showIntro, setShowIntro] = useState(false);
+  const [introDone, setIntroDone] = useState(false);
 
   const [collectedItems, setCollectedItems] = useState([]);
   const [equipped, setEquipped] = useState({
@@ -173,11 +177,18 @@ function App() {
 
   }, [userId]);
 
-  if (!userId && !DEV_MODE) {
-    return <Login onLoggedIn={(id) => setUserId(id)} />;
-  }
 
   console.log("CLIENT ID:", import.meta.env.VITE_GOOGLE_CLIENT_ID);
+
+  if (showIntro && !introDone) {
+    return (
+      <RaccoonIntro
+        onFinish={() => {
+          setShowIntro(false);
+        }}
+      />
+    );
+  }
 
 return (
   <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
@@ -187,6 +198,7 @@ return (
         onLoggedIn={(id) => {
           setUserId(id);
           setToken(localStorage.getItem("token"));
+          setShowIntro(true); // 🔥 trigger intro
         }}
       />
     ) : (

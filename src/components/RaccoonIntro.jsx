@@ -9,13 +9,18 @@ const messages = [
   "Adventure time!",
 ];
 
-const TOTAL_FRAMES = 25;
-const COLS = 5;
-const hasLoggedInBefore = localStorage.getItem("hasLoggedInBefore");
-const isFirstTime = !hasLoggedInBefore;
-const duration = isFirstTime ? 4000 : 3000;
+
 
 export default function RaccoonIntro({ onFinish }) {
+
+  console.log("RACCOON INTRO MOUNTED");
+
+  const TOTAL_FRAMES = 25;
+  const COLS = 5;
+  const hasLoggedInBefore = localStorage.getItem("hasLoggedInBefore");
+  const isFirstTime = !hasLoggedInBefore;
+  const duration = isFirstTime ? 4000 : 3000;
+
   const [message] = useState(() => {
 
     if(isFirstTime){

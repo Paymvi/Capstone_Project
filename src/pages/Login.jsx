@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import "./Login.css";
-import RaccoonIntro from "../components/RaccoonIntro";
 
 // Validate Input 
 function calculatePasswordStrength(password){
@@ -102,9 +101,7 @@ export default function Login({ onLoggedIn }) {
   const [error, setError] = useState("");
   const [lockTime, setLockTime] = useState(0);
   const [animate, setAnimate] = useState(false);
-  const [showIntro, setShowIntro] = useState(false);
-  const [loginData, setLoginData] = useState(null);
-  const [fadeOut, setFadeOut] = useState(false);
+
 
   // Handle events after user login
   // const handleLogin = async () => {
@@ -199,37 +196,30 @@ export default function Login({ onLoggedIn }) {
   // Handle events after user login
   async function handleLogin() {
     try {
+      console.log("LOGIN CLICKED");
 
       const data = await apiPasswordLogin(username, password);
 
+      console.log("LOGIN SUCCESS", data);
+
       setError("");
 
-      console.log("LOGIN RESPONSE:", data);
-
       localStorage.setItem("token", data.token);
+      localStorage.setItem("userId", data.user.id);
 
-      //onLoggedIn(data.user.id);
-
-      setLoginData(data);
-      setFadeOut(true); // start fade
-
-      setTimeout(() => {
-        setShowIntro(true); // THEN show animation
-      }, 500); // match CSS duration
-
-    }
-    catch (err){
+      onLoggedIn(data.user.id);
+    } catch (err) {
       console.error("Login error", err);
       setError(err.message);
 
-      if (err.message.includes("Too many")){
-        setCooldown(60); // 60 seconds 
+      if (err.message.includes("Too many")) {
+        setCooldown(60);
       }
 
       if (err.response?.status === 403) {
         const remaining = err.response?.data?.remainingTime;
         if (remaining) {
-          setError(""); // clear old error
+          setError("");
           setLockTime(remaining);
         }
       }
@@ -271,19 +261,9 @@ export default function Login({ onLoggedIn }) {
     }
   };
 
-  if (showIntro && loginData) {
-    return (
-      <RaccoonIntro
-        onFinish={() => {
-          onLoggedIn(loginData.user.id); // NOW login happens
-          navigate("/");
-        }}
-      />
-    );
-  }
 
   return (
-    <div className={`login-container ${fadeOut ? "fade-out" : ""}`}>
+    <div className="login-container">
 
       {/* LEFT SIDE */}
       <div className="login-left">
@@ -385,7 +365,7 @@ export default function Login({ onLoggedIn }) {
             />
         </div>
       </div>
-      <div className={`fade-overlay ${fadeOut ? "active" : ""}`} />
+      {/* <div className={`fade-overlay ${fadeOut ? "active" : ""}`} /> */}
     </div>
   );
 }

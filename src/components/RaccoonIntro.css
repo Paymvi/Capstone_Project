@@ -1,11 +1,11 @@
 .intro-overlay {
   position: fixed;
   inset: 0;
-
-  background: #0b0c10; 
-
+  background: #0b0c10;
   overflow: hidden;
+  z-index: 99999; /* ADD THIS */
 }
+
 
 .fade-overlay {
   position: fixed;
