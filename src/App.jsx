@@ -60,6 +60,51 @@ function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [showIntro, setShowIntro] = useState(false);
   const [introDone, setIntroDone] = useState(false);
+  const musicRef = useRef(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [musicPlaying, setMusicPlaying] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setMenuOpen(false);
+    };
+
+    if (menuOpen) {
+      window.addEventListener("click", handleClickOutside);
+    }
+
+    return () => {
+      window.removeEventListener("click", handleClickOutside);
+    };
+  }, [menuOpen]);
+
+  const handleToggleMusic = async (e) => {
+    e.stopPropagation();
+
+    if (!musicRef.current) return;
+
+    await musicRef.current.toggleMusic();
+    setMusicPlaying(musicRef.current.isPlaying);
+  };
+
+  const handleLogout = (e) => {
+    e.stopPropagation();
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+
+    setUserId(null);
+    setToken(null);
+  };
+
+  const toggleMenu = (e) => {
+    e.stopPropagation();
+    setMenuOpen((prev) => !prev);
+
+    if (musicRef.current) {
+      setMusicPlaying(musicRef.current.isPlaying);
+    }
+  };
 
   const [collectedItems, setCollectedItems] = useState([]);
   const [equipped, setEquipped] = useState({
@@ -203,22 +248,29 @@ return (
       />
     ) : (
       <>
-        <BackgroundMusic />
+        <BackgroundMusic ref={musicRef} />
 
-        <div style={{ position: "absolute", top: 50, right: 20, zIndex: 1000 }}>
-          <button
-            onClick={() => {
-              localStorage.removeItem("token");
-              localStorage.removeItem("userId");
-
-              setUserId(null);
-              setToken(null);
-            }}
-            style={{ padding: 8 }}
-          >
-            Logout
+        {/* Hamburger Menu */}
+        <div className="menu-wrapper">
+          <button className="menu-button" onClick={toggleMenu}>
+            ☰
           </button>
+
+          {menuOpen && (
+            <div className="menu-dropdown" onClick={(e) => e.stopPropagation()}>
+              <div className="menu-header">Menu</div>
+
+              <button className="menu-item" onClick={handleToggleMusic}>
+                {musicPlaying ? "🔇 Stop Music" : "🔊 Play Music"}
+              </button>
+
+              <button className="menu-item logout" onClick={handleLogout}>
+                🚪 Logout
+              </button>
+            </div>
+          )}
         </div>
+        
 
         <Routes>
           <Route
