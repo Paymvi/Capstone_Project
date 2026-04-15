@@ -79,6 +79,8 @@ function getDistanceMeters(lat1, lng1, lat2, lng2){
 export default function MapScreen({ user, userId, collectedItems, setCollectedItems })
 {
 
+  const [collectingIds, setCollectingIds] = useState(new Set());
+
   const handleRefreshLocation = () => {
     if (!liveLocation) {
       setMessage("📡 Waiting for GPS...");
@@ -115,25 +117,21 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
 
   // Handles the collection of item drops
   async function handleCollect(marker) {
-    try{
-      console.log("COLLECTING: ", marker);
+    try {
+      console.log("COLLECTING:", marker);
 
-      // Send to the backend 
       await apiSetCollected(marker.item_id, liveLocation[0], liveLocation[1]);
 
-      // instant UI
-      setCollectedItems(prev => {
+      setCollectedItems((prev) => {
         const safe = prev || [];
         if (safe.includes(marker.item_id)) return safe;
         return [...safe, marker.item_id];
       });
 
-      // Remove marker locally
-      setMarkers((prev) => prev.filter((m) => m.id !== marker.id));
-    
-    } 
-    catch (err){
+      setMarkers((prev) => prev.filter((m) => m.item_id !== marker.item_id));
+    } catch (err) {
       console.error("Collect failed", err);
+      throw err;
     }
   }
 
@@ -268,59 +266,60 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
   // }, [pegmanPosition, collectedItems, userId]);
 
   useEffect(() => {
+  if (!liveLocation || markers.length === 0) return;
 
-    // Block admin from collecting items
-    if(user?.is_admin){
-      return; 
-    }
+  if (user?.is_admin) return;
 
-    markers.forEach((marker) => {
-      console.log("MARKER:", marker);
-    });
-    console.log("EFFECT RUNNING");
+  markers.forEach((marker) => {
+    const dist = getDistanceMeters(
+      liveLocation[0],
+      liveLocation[1],
+      marker.latlng[0],
+      marker.latlng[1]
+    );
 
-    if(DEV_MODE){
-      console.log("liveLocation:", liveLocation);
-      console.log("markers:", markers);
-    }
+    console.log("DISTANCE:", dist);
 
-    if (!liveLocation || markers.length === 0) {
-      console.log("EXITING EARLY ❌");
-      return;
-    }
+    if (
+      dist < marker.radius &&
+      !collectedIds.has(marker.id) &&
+      !collectingIds.has(marker.id) &&
+      !(collectedItems || []).includes(marker.item_id)
+    ) {
+      if (!marker.item_id) return;
 
-    console.log("PASSED CHECK ✅");
+      console.log("AUTO COLLECT:", marker.name);
 
+      setCollectingIds((prev) => {
+        const updated = new Set(prev);
+        updated.add(marker.id);
+        return updated;
+      });
 
-    markers.forEach((marker) => {
-      const dist = getDistanceMeters(
-        liveLocation[0],
-        liveLocation[1],
-        marker.latlng[0],
-        marker.latlng[1]
-      );
+      handleCollect(marker)
+        .then(() => {
+          setCollectedIds((prev) => {
+            const updated = new Set(prev);
+            updated.add(marker.id);
+            return updated;
+          });
 
-      console.log("DISTANCE:", dist);
-
-      // Pickup radius based on user location
-      if (dist < marker.radius && !collectedIds.has(marker.id)) {
-
-        if (!marker.item_id) return;
-        
-        console.log("AUTO COLLECT:", marker.name);
-        
-        handleCollect(marker);
-
-        setCollectedIds((prev) => {
-          const updated = new Set(prev);
-          updated.add(marker.id);
-          return updated;
+          setMessage(`🎉 You've collected the ${marker.name}!!`);
+        })
+        .catch((err) => {
+          console.error("Auto collect failed:", err);
+          setMessage(err.message);
+        })
+        .finally(() => {
+          setCollectingIds((prev) => {
+            const updated = new Set(prev);
+            updated.delete(marker.id);
+            return updated;
+          });
         });
-
-        setTimeout(() => setMessage(`🎉 You've collected the ${marker.name}!!`), 2000);
-      }
-    });
-  }, [liveLocation, markers, collectedIds]);
+    }
+  });
+}, [liveLocation, markers, collectedIds, collectingIds, collectedItems, user]);
   
   useEffect(() => {
     if (!message) return;

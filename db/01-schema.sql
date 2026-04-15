@@ -12,6 +12,7 @@ CREATE TABLE users (
 	name VARCHAR(255),
 	password_hash VARCHAR(255),
 	is_admin BOOLEAN DEFAULT FALSE,
+	last_collect_time TIMESTAMP,
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

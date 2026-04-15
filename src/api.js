@@ -110,11 +110,13 @@ export async function apiSetCollected(itemId, lat, lng) {
     })
   });
 
+  const data = await res.json().catch(() => ({}));
+
   if (!res.ok) {
-    throw new Error("Failed to collect item");
+    throw new Error(data.error || "Failed to collect item");
   }
 
-  return res.json();
+  return data;
 }
 
 //Get items

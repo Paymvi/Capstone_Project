@@ -313,6 +313,42 @@ app.post("/items/collect", authMiddleware, antiSpoofMiddleware, async (req, res)
       return res.status(400).json({ error: "Missing itemId or location" });
     }
 
+    // Cooldown check
+    const cooldownSeconds = 5;
+
+    const timeResult = await pool.query(
+      "SELECT last_collect_time FROM users WHERE id = $1",
+      [userId]
+    );
+
+    const lastCollect = timeResult.rows[0]?.last_collect_time;
+
+    if (lastCollect) {
+      const now = Date.now();
+      const last = new Date(lastCollect).getTime();
+
+      console.log("NOW: ", now);
+      console.log("LAST: ", last);
+      console.log("RAW lastCollect:", lastCollect);
+      console.log("TYPEOF lastCollect:", typeof lastCollect);
+      console.log("PARSED last:", new Date(lastCollect).toISOString());
+
+      let timeDiff = (now - last) / 1000;
+
+      if (timeDiff < 0) {
+        console.warn("⚠️ Future timestamp detected, resetting cooldown");
+        timeDiff = 0;
+      }
+
+      const remaining = Math.max(0, cooldownSeconds - timeDiff);
+
+      if (timeDiff < cooldownSeconds) {
+        return res.status(429).json({
+          error: `Cooldown active. Wait ${Math.ceil(remaining)} seconds`
+        });
+      }
+    }
+
     const markerResult = await pool.query(
       `SELECT latitude, longitude FROM markers WHERE item_id = $1`,
       [itemId]
@@ -332,11 +368,12 @@ app.post("/items/collect", authMiddleware, antiSpoofMiddleware, async (req, res)
     );
 
     const MAX_DISTANCE_METERS = 30;
+    const BYPASS_PROXIMITY_IN_DEV = process.env.BYPASS_PROXIMITY_IN_DEV === "true";
 
-    if (distance > MAX_DISTANCE_METERS) {
+    if (!BYPASS_PROXIMITY_IN_DEV && distance > MAX_DISTANCE_METERS) {
       await pool.query(
         `INSERT INTO security_logs (username, ip_address, event_type, input)
-         VALUES ($1, $2, $3, $4)`,
+        VALUES ($1, $2, $3, $4)`,
         [
           req.user.username,
           req.ip,
@@ -345,9 +382,7 @@ app.post("/items/collect", authMiddleware, antiSpoofMiddleware, async (req, res)
         ]
       );
 
-      return res.status(403).json({
-        error: "You are too far away to collect this item"
-      });
+      return res.status(403).json({ error: "You are too far away to collect this item" });
     }
 
     await pool.query(
@@ -355,6 +390,11 @@ app.post("/items/collect", authMiddleware, antiSpoofMiddleware, async (req, res)
        VALUES ($1, $2)
        ON CONFLICT (user_id, item_id) DO NOTHING`,
       [userId, itemId]
+    );
+
+    await pool.query(
+      "UPDATE users SET last_collect_time = NOW() WHERE id = $1",
+      [userId]
     );
 
     res.json({ success: true });
