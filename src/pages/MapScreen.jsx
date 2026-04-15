@@ -120,6 +120,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
     try {
       console.log("COLLECTING:", marker);
 
+      // Send to the backend 
       await apiSetCollected(marker.item_id, liveLocation[0], liveLocation[1]);
 
       setCollectedItems((prev) => {
@@ -266,9 +267,29 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
   // }, [pegmanPosition, collectedItems, userId]);
 
   useEffect(() => {
-  if (!liveLocation || markers.length === 0) return;
 
-  if (user?.is_admin) return;
+    // Block admin from collecting items
+    if(user?.is_admin){
+      return; 
+    }
+
+    markers.forEach((marker) => {
+      console.log("MARKER:", marker);
+    });
+    console.log("EFFECT RUNNING");
+
+    if(DEV_MODE){
+      console.log("liveLocation:", liveLocation);
+      console.log("markers:", markers);
+    }
+
+    if (!liveLocation || markers.length === 0) {
+      console.log("EXITING EARLY ❌");
+      return;
+    }
+
+    console.log("PASSED CHECK ✅");
+
 
   markers.forEach((marker) => {
     const dist = getDistanceMeters(
