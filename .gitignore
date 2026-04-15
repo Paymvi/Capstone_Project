@@ -26,5 +26,7 @@ dist-ssr
 backend/.env
 backend/.env.insecure
 backend/.env.secure
+backend/.env.development
+backend/.env.mobile
 
 .env

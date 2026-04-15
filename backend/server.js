@@ -34,7 +34,13 @@ console.log("DATABASE_URL:", process.env.DATABASE_URL);
 console.log("JWT_SECRET:", process.env.JWT_SECRET);
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "http://192.168.4.91:5173"
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
 app.use((req, res, next) => {
@@ -671,8 +677,8 @@ app.get("/health/db", async (_req, res) => {
 const isMain = process.argv[1] === fileURLToPath(import.meta.url);
 
 if (isMain) {
-  app.listen(PORT, () => {
-    console.log(`Server is running on: http://localhost:${PORT}`);
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server is running on: 0.0.0.0:${PORT}`);
   });
 }
 
