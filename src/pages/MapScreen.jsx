@@ -156,9 +156,9 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
 
   // --------------------------------- Pegman ------------------------------
   const pegmanIcon = new L.Icon ({
-    iconUrl: "/Pegman.png",
-    iconSize: [20, 40],
-    iconAnchor: [20, 40],
+    iconUrl: "/Roamie-Dog-2.png",
+    iconSize: [35, 35],
+    iconAnchor: [35, 35],
   });
 
   const mapCenter = [43.0401221381528, -71.45140083791992];
