@@ -6,7 +6,7 @@ export const registerSchema = z.object({
         .max(50)
         .regex(/^[a-zA-Z0-9_]+$/),
     password: z.string()
-        .min(5)
+        .min(8)
         .max(50)
         .regex(/[A-Z]/, "Must include uppercase")
         .regex(/[a-z]/, "Must include lowercase")
@@ -19,7 +19,7 @@ export const loginSchema = z.object({
         .max(50)
         .regex(/^[a-zA-Z0-9_]+$/),
     password: z.string()
-        .min(5)
+        .min(8)
         .max(50)
         .regex(/[A-Z]/, "Must include uppercase")
         .regex(/[a-z]/, "Must include lowercase")

@@ -122,12 +122,14 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
       // Send to the backend 
       await apiSetCollected(marker.item_id, liveLocation[0], liveLocation[1]);
 
+      // instant UI
       setCollectedItems((prev) => {
         const safe = prev || [];
         if (safe.includes(marker.item_id)) return safe;
         return [...safe, marker.item_id];
       });
 
+      // Remove marker locally
       setMarkers((prev) => prev.filter((m) => m.item_id !== marker.item_id));
     } catch (err) {
       console.error("Collect failed", err);

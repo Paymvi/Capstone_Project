@@ -157,21 +157,28 @@ Roamie's secure version incorporates secure practices such as parameterized quer
 
 #### Parameterized Queries
 Parameterized queries is our are primary defense against SQL attacks.
-* 
-* 
-* 
+* Prevent attackers from altering query logic (e.g.,` ' OR 1=1 --`)
+* Ensure safe interaction between application inputs and the database
+* Significantly reduce the risk of unauthorized data access
 
 #### Hashed Passwords
 To prevent passwords from being read plaintext, passwords are stored hash values.
-* 
-* 
-* 
+* Prevents passwords from being exposed in readable form
+* Protects user credentials even if the database is compromised
+* Adds computational cost to cracking attempts (slowing brute-force attacks)
 
 #### Input Validation
-In limiting length of characters in input for username and password, the system would be reducing the attack surface  
+In limiting length of characters in input for username and password, the system would be reducing the possible attack surface.
+* Enforces length requirements (e.g., 8–50 characters)
+* Requires a combination of uppercase, lowercase, and numeric characters
+* Prevents malformed, malicious, or unexpected data from entering the system
+* Reduces attack surface for injection and abuse vectors
 
 #### Least Privileged
-
+Distributes diverse levels of access or permissions based on the user's role.
+* Restricts database permissions based on role (e.g., admin vs. regular user)
+* Prevents unauthorized access to sensitive endpoints and data
+* Limits the impact of a compromised account or service
 
 ### Additional Security Measures
 To further strengthen Roamie's security, multiple defensive layers are implementeted to protect against abuse, unauthorized access, and system compromise. These controls complement core protections such as paramterized queries, authentication and role-based access, encompassing a defense-depth security model for Roamie. 
