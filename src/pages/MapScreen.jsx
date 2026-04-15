@@ -119,7 +119,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
       console.log("COLLECTING: ", marker);
 
       // Send to the backend 
-      await apiSetCollected(marker.item_id);
+      await apiSetCollected(marker.item_id, liveLocation[0], liveLocation[1]);
 
       // instant UI
       setCollectedItems(prev => {

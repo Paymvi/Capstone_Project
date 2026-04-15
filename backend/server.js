@@ -18,6 +18,7 @@ import fs from "fs";
 import path from"path";
 import authMiddleware from "./middleware/authMiddleWare.js";
 import requireAdmin from "./middleware/adminMiddleware.js";
+import antiSpoofMiddleware from "./middleware/antiSpoofingMiddleware.js";
 import { loginLimiter } from "./middleware/rateLimiter.js";
 import bcrypt from "bcrypt";
 import pool from "./db.js";
@@ -299,24 +300,21 @@ app.get("/items", async (req, res) => {
 });
 
 // Collect Item
-app.post("/items/collect", authMiddleware, async (req, res) => {
+app.post("/items/collect", authMiddleware, antiSpoofMiddleware, async (req, res) => {
   try {
-    // Restrict Admin from collecting items
     if (req.user.is_admin) {
       return res.status(403).json({ error: "Admins cannot collect items" });
     }
 
     const userId = req.user.userId;
-    const { itemId, latitude, longitude } = req.body;
+    const { itemId, lat, lng } = req.body;
 
-    if (!itemId || latitude == null || longitude == null) {
+    if (!itemId || lat == null || lng == null) {
       return res.status(400).json({ error: "Missing itemId or location" });
     }
 
     const markerResult = await pool.query(
-      `SELECT latitude, longitude
-      FROM markers
-      WHERE item_id = $1`,
+      `SELECT latitude, longitude FROM markers WHERE item_id = $1`,
       [itemId]
     );
 
@@ -327,8 +325,8 @@ app.post("/items/collect", authMiddleware, async (req, res) => {
     const marker = markerResult.rows[0];
 
     const distance = getDistanceMeters(
-      Number(latitude),
-      Number(longitude),
+      Number(lat),
+      Number(lng),
       Number(marker.latitude),
       Number(marker.longitude)
     );
@@ -336,32 +334,33 @@ app.post("/items/collect", authMiddleware, async (req, res) => {
     const MAX_DISTANCE_METERS = 30;
 
     if (distance > MAX_DISTANCE_METERS) {
-
       await pool.query(
         `INSERT INTO security_logs (username, ip_address, event_type, input)
-        VALUES ($1, $2, $3, $4)`,
+         VALUES ($1, $2, $3, $4)`,
         [
           req.user.username,
           req.ip,
           "CHEAT_ATTEMPT",
-          JSON.stringify({ itemId, latitude, longitude, distance })
+          JSON.stringify({ itemId, lat, lng, distance })
         ]
       );
 
-      return res.status(403).json({ error: "You are too far away to collect this item" });
+      return res.status(403).json({
+        error: "You are too far away to collect this item"
+      });
     }
 
     await pool.query(
-      `
-      INSERT INTO user_inventory (user_id, item_id)
-      VALUES ($1, $2)
-      ON CONFLICT (user_id, item_id) DO NOTHING
-      `,
-      [req.user.id, itemId]
+      `INSERT INTO user_inventory (user_id, item_id)
+       VALUES ($1, $2)
+       ON CONFLICT (user_id, item_id) DO NOTHING`,
+      [userId, itemId]
     );
 
     res.json({ success: true });
+
   } catch (err) {
+    console.error("COLLECT ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 });

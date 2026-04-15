@@ -1,32 +1,31 @@
 import pool from "../db.js";
 
-// Get the distance in meters
-function getDistanceMeters(lat1, lng1, lat2, lng2){
-  const R = 6371000; // Earth radius in meters
-  const toRad = (deg) => (deg * Math.PI) / 180;
+function getDistanceMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const toRad = (deg) => deg * (Math.PI / 180);
 
   const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
+  const dLon = toRad(lon2 - lon1);
 
-  const a = 
-    Math.sin(dLat / 2) ** 2 + 
-    Math.cos(toRad(lat1)) * 
-      Math.cos(toRad(lat2)) * 
-      Math.sin(dLng / 2) ** 2;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) ** 2;
 
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  return R * c;
+  return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 async function antiSpoofMiddleware(req, res, next) {
   try {
-    const userId = req.user.id;
+    console.log("REQ.USER:", req.user);
+
+    const userId = req.user.userId;
 
     const { lat, lng } = req.body;
 
     // Missing location
-    if (!lat || !lng) {
+    if (lat == null || lng == null) {
       return res.status(400).json({ error: "Missing location data" });
     }
 
@@ -45,6 +44,11 @@ async function antiSpoofMiddleware(req, res, next) {
       );
 
       return next();
+    }
+
+    if (!user) {
+    console.error("❌ User not found in anti-spoof:", userId);
+    return res.status(404).json({ error: "User not found" });
     }
 
     const distance = getDistanceMeters(
@@ -72,7 +76,7 @@ async function antiSpoofMiddleware(req, res, next) {
       });
     }
 
-    // 🌍 Rule 2: Teleport check (huge jump)
+    // Rule 2: Teleport check (huge jump)
     if (distance > 10000) { // 10km jump
       return res.status(403).json({
         error: "Teleporting detected"
