@@ -94,7 +94,7 @@ export async function apiSetEquipped(hat, body, outside) {
 
 
 // Collect item
-export async function apiSetCollected(itemId) {
+export async function apiSetCollected(itemId, lat, lng) {
   const token = localStorage.getItem("token");
 
   const res = await fetch(`${API}/items/collect`, {
@@ -104,7 +104,9 @@ export async function apiSetCollected(itemId) {
       Authorization: `Bearer ${token}`
     },
     body: JSON.stringify({
-      itemId
+      itemId,
+      lat,
+      lng
     })
   });
 
