@@ -1,72 +1,63 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 
-export default function BackgroundMusic() {
-
-  const audioRef = useRef(null); // This does not cause re renders when changed
-
-  const [isPlaying, setIsPlaying] = useState(false); // Nothing plays under after rendering
+const BackgroundMusic = forwardRef(function BackgroundMusic(props, ref) {
+  const audioRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
     const audio = audioRef.current;
+    if (!audio) return;
 
-    if (!audio) return; // safety check
+    audio.loop = true;
 
-    audio.loop = true;  // so it loops forever
+    const startOnClick = () => {
+      audio.play()
+        .then(() => {
+          setIsPlaying(true);
+        })
+        .catch(() => {
+          // do nothing if browser still blocks it
+        });
 
-    // Try to autoplay
+      window.removeEventListener("click", startOnClick);
+    };
+
     audio.play()
       .then(() => {
         setIsPlaying(true);
       })
       .catch(() => {
-
-        // If the autoplay fails (most browsers will block it) just wait for the user to click something
-        const startOnClick = () => {
-          audio.play();
-          setIsPlaying(true);
-
-          // Remove listener after the first click
-          window.removeEventListener("click", startOnClick);
-        };
         window.addEventListener("click", startOnClick);
       });
 
-  }, []); // empty array
+    return () => {
+      window.removeEventListener("click", startOnClick);
+    };
+  }, []);
 
-  // This toggle music function plays when the button is clicked
-  const toggleMusic = () => {
+  const toggleMusic = async () => {
     const audio = audioRef.current;
     if (!audio) return;
 
     if (isPlaying) {
-      // If it is currently playing, then pause it
       audio.pause();
       setIsPlaying(false);
     } else {
-      // If currently paused, then play it
-      audio.play();
-      setIsPlaying(true);
+      try {
+        await audio.play();
+        setIsPlaying(true);
+      } catch (err) {
+        console.log("Music play blocked:", err);
+      }
     }
   };
 
-  return (
-    <>
-      {/* The actual audio */}
-      <audio ref={audioRef} src="/theme.mpeg" />
+  useImperativeHandle(ref, () => ({
+    toggleMusic,
+    isPlaying,
+  }));
 
-      {/* Music control button */}
-      <button
-        onClick={toggleMusic}
-        style={{
-          position: "absolute",
-          top: "20px",
-          right: "20px",
-          zIndex: 1000
-        }}
-      >
-        {isPlaying ? "🔇 Stop Music" : "🔊 Play Music"}
-      </button>
-    </>
-  );
+  return <audio ref={audioRef} src="/theme.mpeg" />;
+});
 
-}
+export default BackgroundMusic;
