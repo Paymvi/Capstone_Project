@@ -8,7 +8,7 @@ import { apiAddMarker, apiGetMarkers, apiGetItems, apiGetState  } from "../api";
 import { apiSetCollected } from "../api";
 import ClickHandler from "../components/ClickHandler"
 
-const DEV_MODE = false;
+const DEV_MODE = true;
 
 // Lets map pan to the currrent user location
 function RecenterMap({ position }) {
@@ -79,6 +79,8 @@ function getDistanceMeters(lat1, lng1, lat2, lng2){
 export default function MapScreen({ user, userId, collectedItems, setCollectedItems })
 {
 
+  const [collectingIds, setCollectingIds] = useState(new Set());
+
   const handleRefreshLocation = () => {
     if (!liveLocation) {
       setMessage("📡 Waiting for GPS...");
@@ -88,7 +90,6 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
     setPegmanPosition([...liveLocation]);
     setMessage("📍 Recentered to Pegman!");
   };
-
 
 
   async function loadMarkers() {
@@ -115,25 +116,24 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
 
   // Handles the collection of item drops
   async function handleCollect(marker) {
-    try{
-      console.log("COLLECTING: ", marker);
+    try {
+      console.log("COLLECTING:", marker);
 
       // Send to the backend 
-      await apiSetCollected(marker.item_id);
+      await apiSetCollected(marker.item_id, liveLocation[0], liveLocation[1]);
 
       // instant UI
-      setCollectedItems(prev => {
+      setCollectedItems((prev) => {
         const safe = prev || [];
         if (safe.includes(marker.item_id)) return safe;
         return [...safe, marker.item_id];
       });
 
       // Remove marker locally
-      setMarkers((prev) => prev.filter((m) => m.id !== marker.id));
-    
-    } 
-    catch (err){
+      setMarkers((prev) => prev.filter((m) => m.item_id !== marker.item_id));
+    } catch (err) {
       console.error("Collect failed", err);
+      throw err;
     }
   }
 
@@ -158,9 +158,9 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
 
   // --------------------------------- Pegman ------------------------------
   const pegmanIcon = new L.Icon ({
-    iconUrl: "/Pegman.png",
-    iconSize: [20, 40],
-    iconAnchor: [20, 40],
+    iconUrl: "/Roamie-Dog-2.png",
+    iconSize: [35, 35],
+    iconAnchor: [35, 35],
   });
 
   const mapCenter = [43.0401221381528, -71.45140083791992];
@@ -186,7 +186,9 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
         const { latitude, longitude } = position.coords;
         const coords = [latitude, longitude];
 
-        setPegmanPosition(coords);
+        if (!DEV_MODE){
+          setPegmanPosition(coords);
+        }
         setLiveLocation(coords);
 
         setLocationError("");
@@ -194,7 +196,9 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
 
       
 
-        console.log("Live location:", coords);
+        if(DEV_MODE){
+          console.log("Live location:", coords);
+        }
       },
       (error) => {
         console.error("Geolocation error:", error);
@@ -226,6 +230,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
 
   useEffect(() => {
     if (!liveLocation) return;
+    if (DEV_MODE) return;
 
     const timer = setTimeout(() => {
       handleRefreshLocation();
@@ -277,8 +282,10 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
     });
     console.log("EFFECT RUNNING");
 
-    console.log("liveLocation:", liveLocation);
-    console.log("markers:", markers);
+    if(DEV_MODE){
+      console.log("liveLocation:", liveLocation);
+      console.log("markers:", markers);
+    }
 
     if (!liveLocation || markers.length === 0) {
       console.log("EXITING EARLY ❌");
@@ -288,35 +295,56 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
     console.log("PASSED CHECK ✅");
 
 
-    markers.forEach((marker) => {
-      const dist = getDistanceMeters(
-        liveLocation[0],
-        liveLocation[1],
-        marker.latlng[0],
-        marker.latlng[1]
-      );
+  markers.forEach((marker) => {
+    const dist = getDistanceMeters(
+      liveLocation[0],
+      liveLocation[1],
+      marker.latlng[0],
+      marker.latlng[1]
+    );
 
-      console.log("DISTANCE:", dist);
+    console.log("DISTANCE:", dist);
 
-      // Pickup radius based on user location
-      if (dist < marker.radius && !collectedIds.has(marker.id)) {
+    if (
+      dist < marker.radius &&
+      !collectedIds.has(marker.id) &&
+      !collectingIds.has(marker.id) &&
+      !(collectedItems || []).includes(marker.item_id)
+    ) {
+      if (!marker.item_id) return;
 
-        if (!marker.item_id) return;
-        
-        console.log("AUTO COLLECT:", marker.name);
-        
-        handleCollect(marker);
+      console.log("AUTO COLLECT:", marker.name);
 
-        setCollectedIds((prev) => {
-          const updated = new Set(prev);
-          updated.add(marker.id);
-          return updated;
+      setCollectingIds((prev) => {
+        const updated = new Set(prev);
+        updated.add(marker.id);
+        return updated;
+      });
+
+      handleCollect(marker)
+        .then(() => {
+          setCollectedIds((prev) => {
+            const updated = new Set(prev);
+            updated.add(marker.id);
+            return updated;
+          });
+
+          setMessage(`🎉 You've collected the ${marker.name}!!`);
+        })
+        .catch((err) => {
+          console.error("Auto collect failed:", err);
+          setMessage(err.message);
+        })
+        .finally(() => {
+          setCollectingIds((prev) => {
+            const updated = new Set(prev);
+            updated.delete(marker.id);
+            return updated;
+          });
         });
-
-        setTimeout(() => setMessage(`🎉 You've collected the ${marker.name}!!`), 2000);
-      }
-    });
-  }, [liveLocation, markers, collectedIds]);
+    }
+  });
+}, [liveLocation, markers, collectedIds, collectingIds, collectedItems, user]);
   
   useEffect(() => {
     if (!message) return;
@@ -609,7 +637,20 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
         />
 
         {/* Pegman marker (with coordinate tracking) */}
-        <Marker position={pegmanPosition} icon={pegmanIcon}>
+        <Marker
+          position={pegmanPosition}
+          icon={pegmanIcon}
+          draggable={DEV_MODE}
+          eventHandlers={{
+            dragend: (e) => {
+              const marker = e.target;
+              const position = marker.getLatLng();
+
+              setPegmanPosition([position.lat, position.lng]);
+              setLiveLocation([position.lat, position.lng]); // IMPORTANT for collection logic
+            }
+          }}
+        >
           <Popup>
             You are here
           </Popup>

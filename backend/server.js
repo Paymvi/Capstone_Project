@@ -18,6 +18,7 @@ import fs from "fs";
 import path from"path";
 import authMiddleware from "./middleware/authMiddleWare.js";
 import requireAdmin from "./middleware/adminMiddleware.js";
+import antiSpoofMiddleware from "./middleware/antiSpoofingMiddleware.js";
 import { loginLimiter } from "./middleware/rateLimiter.js";
 import bcrypt from "bcrypt";
 import pool from "./db.js";
@@ -44,6 +45,27 @@ app.use((req, res, next) => {
 
 // This file is your "database"
 const DB_PATH = path.join(__dirname, "db.json");
+
+// ---------- helper functions -----------
+
+// Get the distance in meters
+function getDistanceMeters(lat1, lng1, lat2, lng2){
+  const R = 6371000; // Earth radius in meters
+  const toRad = (deg) => (deg * Math.PI) / 180;
+
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+
+  const a = 
+    Math.sin(dLat / 2) ** 2 + 
+    Math.cos(toRad(lat1)) * 
+      Math.cos(toRad(lat2)) * 
+      Math.sin(dLng / 2) ** 2;
+
+  const c = 2 * Math.atan(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c;
+}
 
 // ---------- routes ----------
 
@@ -278,27 +300,107 @@ app.get("/items", async (req, res) => {
 });
 
 // Collect Item
-app.post("/items/collect", authMiddleware, async (req, res) => {
+app.post("/items/collect", authMiddleware, antiSpoofMiddleware, async (req, res) => {
   try {
-    // Restrict Admin from collecting items
     if (req.user.is_admin) {
       return res.status(403).json({ error: "Admins cannot collect items" });
     }
 
     const userId = req.user.userId;
-    const { itemId } = req.body;
+    const { itemId, lat, lng } = req.body;
+
+    if (!itemId || lat == null || lng == null) {
+      return res.status(400).json({ error: "Missing itemId or location" });
+    }
+
+    // Cooldown check
+    const cooldownSeconds = 5;
+
+    const timeResult = await pool.query(
+      "SELECT last_collect_time FROM users WHERE id = $1",
+      [userId]
+    );
+
+    const lastCollect = timeResult.rows[0]?.last_collect_time;
+
+    if (lastCollect) {
+      const now = Date.now();
+      const last = new Date(lastCollect).getTime();
+
+      console.log("NOW: ", now);
+      console.log("LAST: ", last);
+      console.log("RAW lastCollect:", lastCollect);
+      console.log("TYPEOF lastCollect:", typeof lastCollect);
+      console.log("PARSED last:", new Date(lastCollect).toISOString());
+
+      let timeDiff = (now - last) / 1000;
+
+      if (timeDiff < 0) {
+        console.warn("⚠️ Future timestamp detected, resetting cooldown");
+        timeDiff = 0;
+      }
+
+      const remaining = Math.max(0, cooldownSeconds - timeDiff);
+
+      if (timeDiff < cooldownSeconds) {
+        return res.status(429).json({
+          error: `Cooldown active. Wait ${Math.ceil(remaining)} seconds`
+        });
+      }
+    }
+
+    const markerResult = await pool.query(
+      `SELECT latitude, longitude FROM markers WHERE item_id = $1`,
+      [itemId]
+    );
+
+    if (markerResult.rows.length === 0) {
+      return res.status(404).json({ error: "Marker not found for item" });
+    }
+
+    const marker = markerResult.rows[0];
+
+    const distance = getDistanceMeters(
+      Number(lat),
+      Number(lng),
+      Number(marker.latitude),
+      Number(marker.longitude)
+    );
+
+    const MAX_DISTANCE_METERS = 30;
+    const BYPASS_PROXIMITY_IN_DEV = process.env.BYPASS_PROXIMITY_IN_DEV === "true";
+
+    if (!BYPASS_PROXIMITY_IN_DEV && distance > MAX_DISTANCE_METERS) {
+      await pool.query(
+        `INSERT INTO security_logs (username, ip_address, event_type, input)
+        VALUES ($1, $2, $3, $4)`,
+        [
+          req.user.username,
+          req.ip,
+          "CHEAT_ATTEMPT",
+          JSON.stringify({ itemId, lat, lng, distance })
+        ]
+      );
+
+      return res.status(403).json({ error: "You are too far away to collect this item" });
+    }
 
     await pool.query(
-      `
-      INSERT INTO user_inventory (user_id, item_id)
-      VALUES ($1, $2)
-      ON CONFLICT (user_id, item_id) DO NOTHING
-      `,
+      `INSERT INTO user_inventory (user_id, item_id)
+       VALUES ($1, $2)
+       ON CONFLICT (user_id, item_id) DO NOTHING`,
       [userId, itemId]
     );
 
+    await pool.query(
+      "UPDATE users SET last_collect_time = NOW() WHERE id = $1",
+      [userId]
+    );
+
     res.json({ success: true });
+
   } catch (err) {
+    console.error("COLLECT ERROR:", err);
     res.status(500).json({ error: err.message });
   }
 });
