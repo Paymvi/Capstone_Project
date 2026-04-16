@@ -106,3 +106,4 @@ This tells the device:
 
 PostgreSQL in Docker
 - docker exec -it roamie_db psql -U roamie_user -d roamie
+
