@@ -79,6 +79,7 @@ function getDistanceMeters(lat1, lng1, lat2, lng2){
 export default function MapScreen({ user, userId, collectedItems, setCollectedItems })
 {
 
+  const collectingRef = useRef(new Set());
   const [collectingIds, setCollectingIds] = useState(new Set());
 
   const handleRefreshLocation = () => {
@@ -267,9 +268,11 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
 
 
   markers.forEach((marker) => {
+    const sourcePosition = DEV_MODE ? pegmanPosition : liveLocation;
+    
     const dist = getDistanceMeters(
-      liveLocation[0],
-      liveLocation[1],
+      sourcePosition[0],
+      sourcePosition[1],
       marker.latlng[0],
       marker.latlng[1]
     );
@@ -279,12 +282,14 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
     if (
       dist < marker.radius &&
       !collectedIds.has(marker.id) &&
-      !collectingIds.has(marker.id) &&
+      !collectingRef.current.has(marker.id) &&
       !(collectedItems || []).includes(marker.item_id)
     ) {
       if (!marker.item_id) return;
 
       console.log("AUTO COLLECT:", marker.name);
+
+      collectingRef.current.add(marker.id); // 🔥 instant, synchronous
 
       setCollectingIds((prev) => {
         const updated = new Set(prev);
@@ -292,14 +297,14 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
         return updated;
       });
 
+      setCollectedIds((prev) => {
+        const updated = new Set(prev);
+        updated.add(marker.id);
+        return updated;
+      });
+
       handleCollect(marker)
         .then(() => {
-          setCollectedIds((prev) => {
-            const updated = new Set(prev);
-            updated.add(marker.id);
-            return updated;
-          });
-
           setMessage(`🎉 You've collected the ${marker.name}!!`);
         })
         .catch((err) => {
@@ -308,6 +313,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
         })
         .finally(() => {
           setCollectingIds((prev) => {
+            collectingRef.current.delete(marker.id);
             const updated = new Set(prev);
             updated.delete(marker.id);
             return updated;
@@ -315,7 +321,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
         });
     }
   });
-}, [liveLocation, markers, collectedIds, collectingIds, collectedItems, user]);
+}, [liveLocation, pegmanPosition, markers, collectedIds, collectingIds, collectedItems, user]);
   
   useEffect(() => {
     if (!message) return;
@@ -619,7 +625,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
               const position = marker.getLatLng();
 
               setPegmanPosition([position.lat, position.lng]);
-              setLiveLocation([position.lat, position.lng]); // IMPORTANT for collection logic
+              //setLiveLocation([position.lat, position.lng]); // IMPORTANT for collection logic
             }
           }}
         >

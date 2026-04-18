@@ -324,7 +324,8 @@ app.post("/items/collect", authMiddleware, antiSpoofMiddleware, async (req, res)
     const lastCollect = timeResult.rows[0]?.last_collect_time;
 
     if (lastCollect) {
-      const now = Date.now();
+      const nowResult = await pool.query("SELECT NOW()");
+      const now = new Date(nowResult.rows[0].now).getTime();
       const last = new Date(lastCollect).getTime();
 
       console.log("NOW: ", now);
@@ -336,15 +337,15 @@ app.post("/items/collect", authMiddleware, antiSpoofMiddleware, async (req, res)
       let timeDiff = (now - last) / 1000;
 
       if (timeDiff < 0) {
-        console.warn("⚠️ Future timestamp detected, resetting cooldown");
-        timeDiff = 0;
-      }
+        console.warn("⚠️ Future timestamp detected");
 
-      const remaining = Math.max(0, cooldownSeconds - timeDiff);
+        // Skip cooldown entirely
+        timeDiff = cooldownSeconds + 1;
+      }
 
       if (timeDiff < cooldownSeconds) {
         return res.status(429).json({
-          error: `Cooldown active. Wait ${Math.ceil(remaining)} seconds`
+          error: `Cooldown active. Wait ${Math.ceil(cooldownSeconds - timeDiff)} seconds`
         });
       }
     }

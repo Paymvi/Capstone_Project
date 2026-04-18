@@ -18,6 +18,12 @@ function getDistanceMeters(lat1, lon1, lat2, lon2) {
 
 async function antiSpoofMiddleware(req, res, next) {
   try {
+    const BYPASS = process.env.BYPASS_PROXIMITY_IN_DEV === "true";
+
+    if (BYPASS) {
+        return next(); // skip ALL spoof checks
+    }
+
     console.log("REQ.USER:", req.user);
 
     const userId = req.user.userId;
