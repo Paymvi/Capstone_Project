@@ -1,4 +1,6 @@
-const API = "http://localhost:5000";
+const API = import.meta.env.VITE_API_URL;
+
+console.log("API URL:", import.meta.env.VITE_API_URL);
 
 export function authHeaders() {
   const token = localStorage.getItem("token");
@@ -51,7 +53,7 @@ export async function apiGetState() {
 export async function apiAddMarker(lat, lng, item_id) {
   const token = localStorage.getItem("token");
 
-  const res = await fetch("http://localhost:5000/markers", {
+  const res = await fetch(`${API}/markers`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -94,7 +96,7 @@ export async function apiSetEquipped(hat, body, outside) {
 
 
 // Collect item
-export async function apiSetCollected(itemId, lat, lng) {
+export async function apiSetCollected(itemId) {
   const token = localStorage.getItem("token");
 
   const res = await fetch(`${API}/items/collect`, {
@@ -104,24 +106,20 @@ export async function apiSetCollected(itemId, lat, lng) {
       Authorization: `Bearer ${token}`
     },
     body: JSON.stringify({
-      itemId,
-      lat,
-      lng
+      itemId
     })
   });
 
-  const data = await res.json().catch(() => ({}));
-
   if (!res.ok) {
-    throw new Error(data.error || "Failed to collect item");
+    throw new Error("Failed to collect item");
   }
 
-  return data;
+  return res.json();
 }
 
 //Get items
 export async function apiGetItems() {
-  const res = await fetch("http://localhost:5000/items");
+  const res = await fetch("${API}/items");
   return res.json();
 }
 
@@ -174,7 +172,7 @@ export async function apiGetMarkers() {
   const token = localStorage.getItem("token");
     console.log("GET MARKERS TOKEN:", token);
 
-  const res = await fetch("http://localhost:5000/markers", {
+  const res = await fetch(`${API}/markers`, {
     headers: {
       Authorization: `Bearer ${token}`
     }

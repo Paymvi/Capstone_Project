@@ -35,7 +35,10 @@ console.log("DATABASE_URL:", process.env.DATABASE_URL);
 console.log("JWT_SECRET:", process.env.JWT_SECRET);
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: true, // easiest for dev
+  credentials: true
+}));
 app.use(express.json());
 
 app.use((req, res, next) => {
@@ -522,6 +525,8 @@ app.post("/auth/register", loginLimiter, async (req, res) => {
       });
     }
 
+    console.log("REGISTER BODY:", req.body);
+
     // Normalize input
     const username = result.data.username.toLowerCase().trim();
     const { password } = result.data;
@@ -775,7 +780,7 @@ const isMain = process.argv[1] === fileURLToPath(import.meta.url);
 
 if (isMain) {
   app.listen(PORT, () => {
-    console.log(`Server is running on: http://localhost:${PORT}`);
+    //console.log(`Server is running on: http://localhost:${PORT}`);
   });
 }
 

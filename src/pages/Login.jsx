@@ -229,7 +229,12 @@ export default function Login({ onLoggedIn }) {
 
   async function handleRegister(){
     try { 
+
+      console.log("REGISTER CLICKED");
+
       const data = await apiRegister(username, password );
+
+      console.log("REGISTER SUCCESS", data);
 
       alert("🎉 Account created successfully! 🎉")
 
