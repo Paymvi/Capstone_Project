@@ -96,30 +96,35 @@ export async function apiSetEquipped(hat, body, outside) {
 
 
 // Collect item
-export async function apiSetCollected(itemId) {
-  const token = localStorage.getItem("token");
-
+export async function apiSetCollected(itemId, lat, lng) {
   const res = await fetch(`${API}/items/collect`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`
-    },
+    headers: authHeaders(),
     body: JSON.stringify({
-      itemId
-    })
+      itemId,
+      lat,
+      lng,
+    }),
   });
 
-  if (!res.ok) {
-    throw new Error("Failed to collect item");
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    data = {};
   }
 
-  return res.json();
+  if (!res.ok) {
+    console.error("❌ BACKEND ERROR:", data);
+    throw new Error(data.error || "Failed to collect item");
+  }
+
+  return data;
 }
 
 //Get items
 export async function apiGetItems() {
-  const res = await fetch("${API}/items");
+  const res = await fetch(`${API}/items`);
   return res.json();
 }
 

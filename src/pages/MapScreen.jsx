@@ -116,12 +116,16 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
   } 
 
   // Handles the collection of item drops
-  async function handleCollect(marker) {
+  async function handleCollect(marker, sourcePosition) {
     try {
       console.log("COLLECTING:", marker);
 
-      // Send to the backend 
-      await apiSetCollected(marker.item_id, liveLocation[0], liveLocation[1]);
+      // Send to the backend
+      await apiSetCollected(
+        marker.item_id,
+        sourcePosition[0],
+        sourcePosition[1]
+      );
 
       // instant UI
       setCollectedItems((prev) => {
@@ -131,7 +135,10 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
       });
 
       // Remove marker locally
-      setMarkers((prev) => prev.filter((m) => m.item_id !== marker.item_id));
+      setMarkers((prev) =>
+        prev.filter((m) => m.item_id !== marker.item_id)
+      );
+
     } catch (err) {
       console.error("Collect failed", err);
       throw err;
@@ -297,29 +304,41 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
         return updated;
       });
 
-      setCollectedIds((prev) => {
-        const updated = new Set(prev);
-        updated.add(marker.id);
-        return updated;
-      });
 
-      handleCollect(marker)
-        .then(() => {
-          setMessage(`🎉 You've collected the ${marker.name}!!`);
-        })
-        .catch((err) => {
-          console.error("Auto collect failed:", err);
-          setMessage(err.message);
-        })
-        .finally(() => {
-          setCollectingIds((prev) => {
-            collectingRef.current.delete(marker.id);
-            const updated = new Set(prev);
-            updated.delete(marker.id);
-            return updated;
-          });
+    handleCollect(marker, sourcePosition)
+      .then(() => {
+
+        // ✅ mark as collected ONLY after success
+        setCollectedIds((prev) => {
+          const updated = new Set(prev);
+          updated.add(marker.id);
+          return updated;
         });
+
+        setMessage(`🎉 You've collected the ${marker.name}!!`);
+      })
+      .catch((err) => {
+        console.error("Auto collect failed:", err);
+
+        // Try to surface backend error if available
+        const msg =
+          err?.response?.data?.error ||
+          err?.message ||
+          "Failed to collect item";
+
+        setMessage(`❌ ${msg}`);
+      })
+      .finally(() => {
+        setCollectingIds((prev) => {
+          collectingRef.current.delete(marker.id);
+          const updated = new Set(prev);
+          updated.delete(marker.id);
+          return updated;
+        });
+      });
     }
+
+
   });
 }, [liveLocation, pegmanPosition, markers, collectedIds, collectingIds, collectedItems, user]);
   

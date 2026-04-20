@@ -7,7 +7,7 @@ import { apiGetState, apiAddMarker, apiSetEquipped } from "./api";
 
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
-const DEV_MODE = false;
+const DEV_MODE = true;
 
 
 import BackgroundMusic from "./components/BackgroundMusic"
