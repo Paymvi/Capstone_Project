@@ -92,12 +92,11 @@ export default function SecondScreen({ userId, collectedItems, equipped, setEqui
 
     setEquipped(newEquipped);
 
-  if (!DEV_MODE) {
-    await apiSetEquipped(userId, {
-      hat: newEquipped.hat,
-      body: newEquipped.body,
-      outside: newEquipped.outside
-  }); }
+    await apiSetEquipped(
+      newEquipped.hat,
+      newEquipped.body,
+      newEquipped.outside
+    );
 
     playClickSound();
   }
