@@ -28,10 +28,11 @@
 
 .tabbar {
   position: fixed;
-  left: 16px;
-  right: 16px;
+  left: 50%;
+  transform: translateX(-50%);
   bottom: 14px;
 
+  width: min(92vw, 520px);
   height: 64px;
 
   display: grid;
@@ -39,9 +40,7 @@
 
   background: rgba(255,255,255,0.75);
   backdrop-filter: blur(14px);
-
   border-radius: 20px;
-
   border: 1px solid rgba(0,0,0,0.08);
   box-shadow: 0 10px 25px rgba(0,0,0,0.15);
 
@@ -433,26 +432,23 @@ button.delete:hover {
 .avatar-screen {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: 100dvh;
 }
+
 .room {
   flex: 1;
   width: 100%;
-  min-height: 100vh;
+  min-height: 100dvh;
   text-align: center;
-
   background-image: url("/avatar-bg-screen-4.png");
   background-size: cover;
   background-position: center bottom;
   background-repeat: no-repeat;
-
   position: relative;
-
   display: flex;
   flex-direction: column;
   align-items: center;
-
-  padding: 20px 20px 28px;
+  padding: 14px 14px 92px;
   box-sizing: border-box;
 }
 
@@ -461,25 +457,27 @@ button.delete:hover {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 8px;
+  margin-top: 0;
+  margin-bottom: 6px;
 }
 
 .avatar-container {
-  position: relative;
+  position: absolute;
   width: 320px;
   height: 320px;
-
   display: flex;
   justify-content: center;
   align-items: center;
-
+  vertical-align: middle;
   flex: 0 0 auto;
+  bottom: clamp(300px, 18vh, 260px);
+  z-index: 10;
 }
 
 .avatar-container > img:first-child {
-  width: 230px;
-  display: block;
+  width: 70%;
 }
+
 .accessory {
   z-index: 2;
 }
@@ -538,25 +536,32 @@ button.delete:hover {
   width: 100%;
   display: flex;
   justify-content: center;
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
 .avatar-customizer {
-  width: min(920px, 96vw);
+  width: min(680px, 92vw); /* ↓ smaller max width */
+  
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px; /* ↓ tighter spacing */
 
-  padding: 18px;
-  border-radius: 30px;
+  padding: 14px; /* ↓ less bulky */
+  border-radius: 24px;
 
   background: linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(246,248,255,0.96) 100%);
   backdrop-filter: blur(14px);
   border: 1px solid rgba(255,255,255,0.6);
 
   box-shadow:
-    0 18px 45px rgba(0,0,0,0.16),
+    0 12px 30px rgba(0,0,0,0.14), /* ↓ softer */
     inset 0 1px 0 rgba(255,255,255,0.75);
+
+  z-index: 5;
+  position: relative;
+
+  margin-top: clamp(140px, 28vh, 320px);
+  transform: translateY(175px); /* tweak this */
 }
 
 .avatar-customizer-top h2 {
@@ -598,12 +603,13 @@ button.delete:hover {
 
 .accessory-panel {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
   gap: 14px;
-
-  max-height: 340px;
+  max-height: 160px;
   overflow-y: auto;
   padding-right: 4px;
+
+  /* DEFAULT = desktop */
+  grid-template-columns: repeat(4, 1fr);
 }
 
 .accessory-panel::-webkit-scrollbar {
@@ -624,9 +630,10 @@ button.delete:hover {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
 
-  padding: 14px;
+  padding: 10px; /* ↓ from 14 */
+  gap: 6px;      /* ↓ from 10 */
+
   border: 1px solid rgba(122, 127, 148, 0.18);
   border-radius: 22px;
 
@@ -983,8 +990,8 @@ button.delete:hover {
 
 .locate-btn {
   position: absolute;
-  bottom: 100px;
-  right: 30px;
+  bottom: 82px;
+  right: 18px;
   z-index: 1000;
   padding: 10px 14px;
   border-radius: 999px;
@@ -998,6 +1005,15 @@ button.delete:hover {
   width: auto;
   height: auto;
   font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .locate-btn {
+    bottom: 74px;
+    right: 14px;
+    padding: 9px 12px;
+    font-size: 11px;
+  }
 }
 
 
@@ -1226,5 +1242,255 @@ button.delete:hover {
 
   .menu-dropdown {
     width: 190px;
+  }
+
+  .avatar-container {
+    width: min(62vw, 240px);
+    height: min(62vw, 240px);
+  }
+
+  .avatar-container > img:first-child {
+    width: min(48vw, 180px);
+  }
+
+  .accessory-panel {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .room {
+    padding-bottom: 110px;
+  }
+
+  .tabbar {
+    width: min(94vw, 480px);
+    height: 60px;
+  }
+}
+
+@media (max-width: 1000px) {
+  .profile-page {
+    padding: 14px 12px 92px;
+    max-width: 100%;
+    margin: 0 auto;
+  }
+
+  .profile-top {
+    display: grid;
+    grid-template-columns: 56px 1fr auto;
+    column-gap: 10px;
+    row-gap: 8px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .profile-avatar-emoji {
+    font-size: 36px;
+  }
+
+  .profile-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .profile-name {
+    margin: 0;
+    font-size: 18px;
+    letter-spacing: 0.1px;
+  }
+
+  .profile-stat-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .profile-stat {
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+
+  .profile-stat-title,
+  .pill-title {
+    font-size: 9px;
+  }
+
+  .profile-stat-value,
+  .pill-value {
+    font-size: 13px;
+  }
+
+  .profile-pill {
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+
+  .profile-badges {
+    margin-top: 12px;
+    padding: 0;
+  }
+
+  .badges-header {
+    font-size: 16px;
+    margin-bottom: 8px;
+    color: #222;
+  }
+
+  .badges-scroll {
+    gap: 10px;
+    padding-bottom: 4px;
+  }
+
+  .badge-card {
+    min-width: 84px;
+  }
+
+  .badge-img {
+    width: 100px;
+    height: 100px;
+  }
+
+  .badge-name {
+    font-size: 11px;
+    margin-top: 3px;
+    color: #666;
+  }
+
+  .badge-status {
+    font-size: 9px;
+    color: #999;
+  }
+}
+
+@media (max-width: 768px) {
+  .avatar-customizer-shell {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 4px;
+  }
+
+  .avatar-customizer {
+    margin-top: clamp(80px, 35vh, 220px); /* pull it UP slightly */
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .accessory-item {
+    padding: 10px;
+    border-radius: 18px;
+  }
+
+  .accessory-filters {
+    gap: 8px;
+  }
+
+  .accessory-filters button {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+
+  .accessory-panel {
+    grid-template-columns: repeat(2, 1fr); /* 2 instead of 4 */
+    gap: 10px;
+    max-height: 150px; /* prevent overflow */
+  }
+
+  .accessory-thumb-wrap {
+    width: 56px;
+    height: 56px;
+  }
+
+  .accessory-name {
+    font-size: 0.85rem;
+  }
+
+  .accessory-type {
+    font-size: 0.7rem;
+  }
+}
+
+/* Tablet */
+@media (max-width: 900px) and (orientation: landscape) {
+  .avatar-container {
+    width: 120px;
+    height: 120px;
+    bottom: 190px; /* move dog down */
+  }
+
+  .avatar-container > img:first-child {
+    width: 95px;
+  }
+
+  .avatar-customizer {
+    width: min(92vw, 720px);
+    margin-top: 0;
+    transform: translateY(80px); /* push panel lower */
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .accessory-filters {
+    gap: 6px;
+  }
+
+  .accessory-filters button {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+
+  .accessory-panel {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    max-height: 80px;
+  }
+
+  .accessory-item {
+    max-width: 300px;
+    max-height: 90px;
+    padding: 6px;
+    gap: 4px;
+    border-radius: 16px;
+  }
+
+  .accessory-thumb-wrap {
+    width: 42px;
+    height: 42px;
+  }
+
+  .accessory-name {
+    font-size: 0.8rem;
+  }
+
+  .accessory-type {
+    font-size: 0.65rem;
+  }
+
+  .tabbar {
+    height: 50px;
+    width: min(92vw, 560px);
+    bottom: 8px;
+  }
+
+  .tab-icon {
+    font-size: 18px;
+  }
+
+  .tab-label {
+    font-size: 10px;
+    margin-top: 1px;
+  }
+
+  .room {
+    padding-bottom: 70px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .accessory-panel {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

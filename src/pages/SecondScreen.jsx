@@ -265,7 +265,7 @@ export default function SecondScreen({ userId, collectedItems, equipped, setEqui
                   onSelect={toggleAccessory}
                 />
               </div>
-            </div>
+            </div> 
           </div>
 
         
