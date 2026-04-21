@@ -37,6 +37,12 @@ function TabBar() {
     { to: "/profile", label: "Profile", icon: <FiUser />},
   ];
 
+  const playClickSound = () => {
+    const audio = new Audio("/jingle-3.wav");
+    audio.volume = 0.6;
+    audio.play();
+  };
+
   return (
     <nav className="tabbar" aria-label="Bottom Navigation">
       {tabs.map((t) => (
@@ -44,6 +50,7 @@ function TabBar() {
           key={t.to}
           to={t.to}
           end={t.to === "/"} // makes "/" not stay active on every route
+          onClick={playClickSound}
           className={({ isActive }) => (isActive ? "tab active" : "tab")}
         >
           <span className="tab-icon" aria-hidden="true">
@@ -81,18 +88,28 @@ function App() {
   const handleToggleMusic = async (e) => {
     e.stopPropagation();
 
-    if (!musicRef.current) return;
+    if (!musicRef.current) {
+      return;
+    }
+
+    const audio = new Audio("/jingle-3.wav");
+    audio.volume = 0.6;
 
     await musicRef.current.toggleMusic();
+    audio.play();
     setMusicPlaying(musicRef.current.isPlaying);
   };
 
   const handleLogout = (e) => {
     e.stopPropagation();
 
+    const audio = new Audio("/jingle-3.wav");
+    audio.volume = 0.6;
+
     localStorage.removeItem("token");
     localStorage.removeItem("userId");
 
+    audio.play();
     setUserId(null);
     setToken(null);
   };

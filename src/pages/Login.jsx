@@ -200,7 +200,11 @@ export default function Login({ onLoggedIn }) {
 
       const data = await apiPasswordLogin(username, password);
 
+      const audio = new Audio("/jingle-3.wav");
+      audio.volume = 0.6;
+
       console.log("LOGIN SUCCESS", data);
+      audio.play();
 
       setError("");
 
@@ -232,9 +236,14 @@ export default function Login({ onLoggedIn }) {
 
       console.log("REGISTER CLICKED");
 
+      const audio = new Audio("/jingle-3.wav");
+      audio.volume = 0.6;
+
       const data = await apiRegister(username, password );
 
       console.log("REGISTER SUCCESS", data);
+
+      audio.play();
 
       alert("🎉 Account created successfully! 🎉")
 

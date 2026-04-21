@@ -40,23 +40,30 @@ export default function SecondScreen({ userId, collectedItems, equipped, setEqui
       id: "body_coat",                // coat
       type: "body", 
       name: "Coat", 
-      src: "/coatwinter.png",
-      position: { bottom: "16%", height: "90px", left: "46%" }
+      src: "/Roamie-Coat-z.png",
+      position: { bottom: "18%", height: "102px", left: "47.5%" }
     
     },
     { 
       id: "outside_shield",             // shield
       type: "outside", 
       name: "Shield", 
-      src: "/Roamie-Shield-2.png",
-      position: { bottom: "20%", height: "100px", left: "65%"}
+      src: "/Roamie-Shield-z.png",
+      position: { bottom: "17%", height: "115px", left: "68%"}
     },
     { 
       id: "outside_dumbbell",             // dumbbell
       type: "outside", 
       name: "Dumbell", 
-      src: "/Roamie-Dumbbell-2.png",
-      position: { bottom: "15%", height: "75px", left: "65%"}
+      src: "/dumbell.png",
+      position: { bottom: "15%", height: "235px", left: "50%"}
+    },
+    {    
+      id: "outside_pizza",             // dumbbell
+      type: "outside", 
+      name: "Pizza", 
+      src: "/pizza.png",
+      position: { bottom: "15%", height: "240px", left: "50%"}
     },
     
   ];
@@ -187,7 +194,7 @@ export default function SecondScreen({ userId, collectedItems, equipped, setEqui
           <div className="avatar-stage">
             <div className="avatar-container">
               <img
-                src="/Roamie-Dog-2.png"
+                src="/dog.png"
                 width="230px"
                 onClick={() => speak("Welcome to Roamie!")}
               />
