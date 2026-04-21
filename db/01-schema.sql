@@ -14,6 +14,10 @@ CREATE TABLE users (
 	is_admin BOOLEAN DEFAULT FALSE,
 	last_collect_time TIMESTAMP,
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+	last_lat DOUBLE PRECISION,
+  last_lng DOUBLE PRECISION,
+  last_location_time TIMESTAMP
 );
 
 CREATE TABLE items (

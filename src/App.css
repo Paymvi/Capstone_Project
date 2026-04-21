@@ -833,13 +833,13 @@ button.delete:hover {
 }
 
 .profile-top {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  column-gap: 20px;
-  row-gap: 12px;
-  align-items: start;
-  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;   /* centers everything */
+  text-align: center;
+  gap: 16px;
 }
+
 
 .profile-avatar-emoji {
   font-size: 44px;

@@ -40,7 +40,7 @@ export default function SecondScreen({ userId, collectedItems, equipped, setEqui
       id: "body_coat",                // coat
       type: "body", 
       name: "Coat", 
-      src: "/Roamie-Coat-2.png",
+      src: "/coatwinter.png",
       position: { bottom: "16%", height: "90px", left: "46%" }
     
     },
