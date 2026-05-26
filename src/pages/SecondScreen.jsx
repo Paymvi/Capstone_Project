@@ -20,14 +20,14 @@ export default function SecondScreen({ userId, collectedItems, equipped, setEqui
       type: "hat", 
       name: "Crown", 
       src: "/Roamie-Crown-2.png",
-      position: { bottom: "70%", height: "40px", left: "44%" }
+      position: { bottom: "70%", height: "40px", left: "47%" }
     },
     { 
       id: "hat_santahat",             // santahat
       type: "hat", 
       name: "SantaHat", 
-      src: "/Roamie-SantaHat.png",
-      position: { bottom: "70%", height: "60px", left: "55%" }
+      src: "/Roamie-SantaHat-z.png",
+      position: { bottom: "70%", height: "60px", left: "52%" }
     },
     { 
       id: "hat_flower",             // flower
@@ -40,8 +40,8 @@ export default function SecondScreen({ userId, collectedItems, equipped, setEqui
       id: "body_coat",                // coat
       type: "body", 
       name: "Coat", 
-      src: "/Roamie-Coat-z.png",
-      position: { bottom: "18%", height: "102px", left: "47.5%" }
+      src: "/Roamie-Coat-z2.png",
+      position: { bottom: "18%", width: "180px", height: "105px", left: "47%" }
     
     },
     { 
@@ -49,7 +49,7 @@ export default function SecondScreen({ userId, collectedItems, equipped, setEqui
       type: "outside", 
       name: "Shield", 
       src: "/Roamie-Shield-z.png",
-      position: { bottom: "17%", height: "115px", left: "68%"}
+      position: { bottom: "20%", height: "112px", left: "69%"}
     },
     { 
       id: "outside_dumbbell",             // dumbbell

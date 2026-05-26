@@ -6,7 +6,7 @@ import { describe, test, expect, afterAll, beforeEach } from "@jest/globals";
 
 async function getAuthToken() {
     const username = `testuser_${Date.now()}`;
-    const password = "password123";
+    const password = "StrongPass123!";
 
     await request(app)
         .post("/auth/register")
@@ -32,27 +32,23 @@ describe("Core Gameplay Tests", () => {
     test("Collect item adds to inventory", async () => {
         const token = await getAuthToken();
 
+        const markerRes = await request(app)
+            .get("/markers")
+            .set("Authorization", `Bearer ${token}`);
+
+        expect(markerRes.statusCode).toBe(200);
+        expect(markerRes.body.length).toBeGreaterThan(0);
+
+        const marker = markerRes.body[0];
+
         const res = await request(app)
             .post("/items/collect")
             .set("Authorization", `Bearer ${token}`)
             .send({
-                itemId: 1 // make sure this exists in the DB
-            });
-
-        expect(res.statusCode).toBe(200);
-        expect(res.body.success).toBe(true);
-    });
-
-    test("Equip item updates equipment", async () => {
-        const token = await getAuthToken();
-
-        const res = await request(app)
-            .put("/equip")
-            .set("Authorization", `Bearer ${token}`)
-            .send({
-                hat: 1,
-                body: null,
-                outside: null
+                markerId: marker.id,
+                itemId: marker.item_id,
+                lat: marker.latitude,
+                lng: marker.longitude
             });
 
         expect(res.statusCode).toBe(200);
@@ -75,19 +71,35 @@ describe("Core Gameplay Tests", () => {
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        await request(app)
-            .post("/items/collect")
-            .set("Authorization", `Bearer ${token}`)
-            .send({ itemId: 1 });
+        const markerRes = await request(app)
+            .get("/markers")
+            .set("Authorization", `Bearer ${token}`);
+
+        expect(markerRes.statusCode).toBe(200);
+        expect(markerRes.body.length).toBeGreaterThan(0);
+
+        const marker = markerRes.body[0];
+
+        const collectBody = {
+            markerId: marker.id,
+            itemId: marker.item_id,
+            lat: marker.latitude,
+            lng: marker.longitude
+        };
 
         await request(app)
             .post("/items/collect")
             .set("Authorization", `Bearer ${token}`)
-            .send({ itemId: 1 });
+            .send(collectBody);
+
+        await request(app)
+            .post("/items/collect")
+            .set("Authorization", `Bearer ${token}`)
+            .send(collectBody);
 
         const result = await pool.query(
             "SELECT * FROM user_inventory WHERE user_id = $1 AND item_id = $2",
-            [decoded.userId, 1]
+            [decoded.userId, marker.item_id]
         );
 
         expect(result.rows.length).toBe(1);
@@ -113,4 +125,31 @@ describe("Core Gameplay Tests", () => {
 
         expect(markerIds).not.toContain(1);
     });
+
+    test("Can equip item that user has collected", async () => {
+        const token = await getAuthToken();
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const testUserId = decoded.userId;
+
+        // However your test inserts inventory:
+        await pool.query(
+            `INSERT INTO user_inventory (user_id, item_id) VALUES ($1, $2)`,
+            [testUserId, "hat_crown"]
+        );
+
+        const res = await request(app)
+            .put("/equip")
+            .set("Authorization", `Bearer ${token}`)
+            .send({
+            hat: "hat_crown"
+            });
+
+        expect(res.statusCode).toBe(200);
+        expect(res.body.equipped.hat_item_id).toBe("hat_crown");
+    });
+});
+
+afterAll(async () => {
+    await pool.end();
 });

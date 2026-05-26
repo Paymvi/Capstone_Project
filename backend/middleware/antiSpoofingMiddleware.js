@@ -42,19 +42,19 @@ async function antiSpoofMiddleware(req, res, next) {
 
     const user = result.rows[0];
 
+    if (!user) {
+      console.error("❌ User not found in anti-spoof:", userId);
+      return res.status(404).json({ error: "User not found" });
+    }
+
     // First-time location (no checks)
-    if (!user.last_lat || !user.last_lng || !user.last_location_update) {
+    if (user.last_lat == null || user.last_lng == null || !user.last_location_update) {
       await pool.query(
         "UPDATE users SET last_lat=$1, last_lng=$2, last_location_update=NOW() WHERE id=$3",
         [lat, lng, userId]
       );
 
       return next();
-    }
-
-    if (!user) {
-    console.error("❌ User not found in anti-spoof:", userId);
-    return res.status(404).json({ error: "User not found" });
     }
 
     const distance = getDistanceMeters(

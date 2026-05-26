@@ -116,27 +116,23 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
   } 
 
   // Handles the collection of item drops
-  async function handleCollect(marker, sourcePosition) {
+  async function handleCollect(markerId, itemId, lat, lng) {
     try {
-      console.log("COLLECTING:", marker);
-
-      // Send to the backend
-      await apiSetCollected(
-        marker.item_id,
-        sourcePosition[0],
-        sourcePosition[1]
-      );
-
-      // instant UI
-      setCollectedItems((prev) => {
-        const safe = prev || [];
-        if (safe.includes(marker.item_id)) return safe;
-        return [...safe, marker.item_id];
+      await apiSetCollected({
+        markerId,
+        itemId,
+        lat,
+        lng
       });
 
-      // Remove marker locally
+      setCollectedItems((prev) => {
+        const safe = prev || [];
+        if (safe.includes(itemId)) return safe;
+        return [...safe, itemId];
+      });
+
       setMarkers((prev) =>
-        prev.filter((m) => m.item_id !== marker.item_id)
+        prev.filter((m) => m.item_id !== itemId)
       );
 
     } catch (err) {
@@ -305,7 +301,12 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
       });
 
 
-    handleCollect(marker, sourcePosition)
+    handleCollect(
+        marker.id,
+        marker.item_id,
+        sourcePosition[0],
+        sourcePosition[1]
+      )
       .then(() => {
 
         // ✅ mark as collected ONLY after success

@@ -32,16 +32,39 @@ import { error } from "console";
 
 
 console.log("DATABASE_URL:", process.env.DATABASE_URL);
-console.log("JWT_SECRET:", process.env.JWT_SECRET);
 
 const app = express();
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://192.168.4.136:5173"
+]
+
 app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "http://192.168.4.91:5173"
-  ],
+  origin: (origin, callback) => {
+    // Allow requests with no origin, like Postman/curl
+    if (!origin) return callback(null, true);
+
+    // Allow normal local frontend
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // Allow local network Vite dev server, example: http://192.168.4.136:5173
+    const localNetworkRegex = /^http:\/\/192\.168\.\d+\.\d+:5173$/;
+
+    if (localNetworkRegex.test(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("Not allowed by CORS"));
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
 }));
+
 app.use(express.json());
 
 app.use((req, res, next) => {
@@ -68,7 +91,7 @@ function getDistanceMeters(lat1, lng1, lat2, lng2){
       Math.cos(toRad(lat2)) * 
       Math.sin(dLng / 2) ** 2;
 
-  const c = 2 * Math.atan(Math.sqrt(a), Math.sqrt(1 - a));
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
   return R * c;
 }
@@ -285,7 +308,11 @@ app.get("/me/state", authMiddleware, async (req, res) => {
       userId,
       is_admin: userResult.rows[0].is_admin,
       collectedItems: items.rows.map(r => r.item_id),
-      equipped: equipment.rows[0] || {},
+      equipped: equipment.rows[0] || {
+        hat_item_id: null,
+        body_item_id: null,
+        outside_item_id: null
+      },
       markers: markers.rows
     });
 
@@ -313,7 +340,7 @@ app.post("/items/collect", authMiddleware, antiSpoofMiddleware, async (req, res)
     }
 
     const userId = req.user.userId;
-    const { itemId, lat, lng } = req.body;
+    const { markerId, itemId, lat, lng } = req.body;
 
     if (!itemId || lat == null || lng == null) {
       return res.status(400).json({ error: "Missing itemId or location" });
@@ -357,8 +384,8 @@ app.post("/items/collect", authMiddleware, antiSpoofMiddleware, async (req, res)
     }
 
     const markerResult = await pool.query(
-      `SELECT latitude, longitude FROM markers WHERE item_id = $1`,
-      [itemId]
+      `SELECT id, latitude, longitude, item_id FROM markers WHERE id = $1`,
+      [markerId]
     );
 
     if (markerResult.rows.length === 0) {
@@ -366,6 +393,9 @@ app.post("/items/collect", authMiddleware, antiSpoofMiddleware, async (req, res)
     }
 
     const marker = markerResult.rows[0];
+
+    // trust markerId as source of truth
+    const itemIdFinal = marker.item_id;
 
     const distance = getDistanceMeters(
       Number(lat),
@@ -392,11 +422,28 @@ app.post("/items/collect", authMiddleware, antiSpoofMiddleware, async (req, res)
       return res.status(403).json({ error: "You are too far away to collect this item" });
     }
 
+    console.log("COLLECT DEBUG:", {
+      markerId,
+      itemId,
+      userLat: lat,
+      userLng: lng,
+      markerLat: marker.latitude,
+      markerLng: marker.longitude,
+    });
+
+    console.log("DISTANCE TO MARKER:", distance);
+
+    console.log("BACKEND CHECK:", {
+      markerId,
+      itemId,
+      dbItemId: marker.item_id
+    });
+
     await pool.query(
       `INSERT INTO user_inventory (user_id, item_id)
        VALUES ($1, $2)
        ON CONFLICT (user_id, item_id) DO NOTHING`,
-      [userId, itemId]
+      [userId, itemIdFinal]
     );
 
     await pool.query(
@@ -418,20 +465,115 @@ app.put("/equip", authMiddleware, async (req, res) => {
   const { hat, body, outside } = req.body;
 
   try {
-    await pool.query(
+    const requestedItemIds = [
+      {slot: "hat", id: hat},
+      {slot: "body", id: body},
+      {slot: "outside", id: outside}
+    ].filter(item => item.id !== undefined && item.id !== null && item.id !== "");
+
+    if(requestedItemIds.length === 0){
+      await pool.query(
+        `
+        INSERT INTO user_equipment (user_id, hat_item_id, body_item_id, outside_item_id)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (user_id)
+        DO UPDATE SET
+          hat_item_id = EXCLUDED.hat_item_id,
+          body_item_id = EXCLUDED.body_item_id,
+          outside_item_id = EXCLUDED.outside_item_id
+        `,
+        [userId, hat, body, outside]
+      );
+
+      return res.json({ 
+        message: "Equipment cleared",
+        equipped: { 
+          hat: null, 
+          body: null, 
+          outside: null 
+        } 
+      });
+    }
+
+    const itemIds = requestedItemIds.map(item => item.id);
+
+    // Check that all requested items are in this user's inventory
+    const ownedResult = await pool.query(
       `
-      INSERT INTO user_equipment (user_id, hat_item_id, body_item_id, outside_item_id)
+      SELECT item_id 
+      FROM user_inventory
+      WHERE user_id = $1 
+      AND item_id = ANY($2::text[])
+      `,
+      [userId, itemIds]
+    );
+
+    const ownedItemIds = ownedResult.rows.map(row => row.item_id);
+
+    const notOwned = itemIds.filter(itemId => !ownedItemIds.includes(itemId));
+
+    if (notOwned.length > 0) {
+      return res.status(403).json({ 
+        error: "Cannot equip items you have not collected",
+        notOwned
+      });
+    }
+
+    // Optional but strongly recommended:
+    // Make sure the item types match the slots (e.g. you can't equip a hat item in the body slot)
+    const typeResult = await pool.query(
+      `
+      SELECT item_id, type 
+      FROM items
+      WHERE item_id = ANY($1::text[])
+      `,
+      [itemIds]
+    );
+
+    const itemTypes = {};
+    for (const row of typeResult.rows) {
+      itemTypes[row.item_id] = row.type;
+    }
+
+    const invalidSlotItems = [];
+
+    for (const item of requestedItemIds) {
+      if(itemTypes[item.id] !== item.slot){
+        invalidSlotItems.push({
+          itemId: item.id, 
+          expectedSlot: itemTypes[item.id], 
+          providedSlot: item.slot
+        });
+      }
+    }
+
+    if (invalidSlotItems.length > 0) {
+      return res.status(400).json({
+        error: "Item type does not match equipment slot",
+        invalidSlotItems
+      });
+    }
+
+    const result = await pool.query(
+      `
+      INSERT INTO user_equipment 
+        (user_id, hat_item_id, body_item_id, outside_item_id)
       VALUES ($1, $2, $3, $4)
       ON CONFLICT (user_id)
       DO UPDATE SET
         hat_item_id = EXCLUDED.hat_item_id,
         body_item_id = EXCLUDED.body_item_id,
         outside_item_id = EXCLUDED.outside_item_id
+      RETURNING hat_item_id, body_item_id, outside_item_id
       `,
-      [userId, hat, body, outside]
+      [userId, hat || null, body || null, outside || null]
     );
 
-    res.json({ success: true });
+    res.json({ 
+      message: "Equipment updated successfully",
+      equipped: result.rows[0]
+    });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
@@ -781,11 +923,13 @@ app.get("/health/db", async (_req, res) => {
 
 const isMain = process.argv[1] === fileURLToPath(import.meta.url);
 
-if (isMain) {
+if (process.env.NODE_ENV !== "test") {
   app.listen(PORT, () => {
-    //console.log(`Server is running on: http://localhost:${PORT}`);
+    console.log(`Server running on port ${PORT}`);
   });
 }
+
+export default app;
 
 app.get("/tables", authMiddleware, requireAdmin, async (req, res) => {
   const result = await pool.query(`
@@ -806,6 +950,10 @@ app.get("/test-db", async (req, res) => {
     console.error("DB TEST ERROR:", err);
     res.status(500).json({ error: err.message });
   }
+});
+
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", message: "Backend is reachable" });
 });
 
 app.use(cookieParser());

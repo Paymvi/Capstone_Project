@@ -10,7 +10,7 @@ describe("Authorization Tests", () => {
             .post("/auth/register")
             .send({
                 username: `user_${Date.now()}`,
-                password: "password123"
+                password: "StrongPass123!"
             });
 
         expect(res.statusCode).toBe(200);
@@ -22,18 +22,18 @@ describe("Authorization Tests", () => {
 
         await request(app)
             .post("/auth/register")
-            .send({ username, password: "password123" });
+            .send({ username, password: "StrongPass123!" });
 
         const res = await request(app)
             .post("/auth/register")
-            .send({ username, password: "password123" });
+            .send({ username, password: "StrongPass123!" });
 
         expect(res.statusCode).toBe(400);
     })
 
     test("Login returns JWT token", async () => {
         const username = `user_${Date.now()}`;
-        const password = "password123";
+        const password = "StrongPass123!";
 
         await request(app)
             .post("/auth/register")
@@ -49,7 +49,7 @@ describe("Authorization Tests", () => {
 
     test("JWT contains correct user data", async () => {
         const username = `user_${Date.now()}`;
-        const password = "password123";
+        const password = "StrongPass123!";
 
         await request(app)
             .post("/auth/register")

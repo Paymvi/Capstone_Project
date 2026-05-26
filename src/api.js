@@ -96,27 +96,23 @@ export async function apiSetEquipped(hat, body, outside) {
 
 
 // Collect item
-export async function apiSetCollected(itemId, lat, lng) {
+export async function apiSetCollected({ markerId, itemId, lat, lng }) {
   const res = await fetch(`${API}/items/collect`, {
     method: "POST",
     headers: authHeaders(),
     body: JSON.stringify({
+      markerId,
       itemId,
       lat,
-      lng,
-    }),
+      lng
+    })
   });
 
-  let data;
-  try {
-    data = await res.json();
-  } catch {
-    data = {};
-  }
+  const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    console.error("❌ BACKEND ERROR:", data);
-    throw new Error(data.error || "Failed to collect item");
+    console.error("BACKEND ERROR:", data);
+    throw new Error(data.error || "Collect failed");
   }
 
   return data;
