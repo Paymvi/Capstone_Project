@@ -186,3 +186,17 @@ export async function apiGetMarkers() {
 
   return res.json();
 }
+
+export async function apiGetNearbyMarkers(lat, lng) {
+  const res = await fetch(`${API}/markers/nearby?lat=${lat}&lng=${lng}`, {
+    headers: authHeaders(),
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(data.error || "Failed to fetch nearby markers");
+  }
+
+  return data.markers;
+}

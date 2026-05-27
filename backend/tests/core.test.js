@@ -148,6 +148,35 @@ describe("Core Gameplay Tests", () => {
         expect(res.statusCode).toBe(200);
         expect(res.body.equipped.hat_item_id).toBe("hat_crown");
     });
+    
+    test("Regular users should not receive all marker coordinates from /me/state", async () => {
+        const token = await getAuthToken();
+
+        const res = await request(app)
+            .get("/me/state")
+            .set("Authorization", `Bearer ${token}`);
+
+        console.log("ME STATE STATUS:", res.status);
+        console.log("ME STATE BODY:", res.body);
+
+        expect(res.status).toBe(200);
+        expect(res.body.markers).toBeUndefined();
+    });
+
+    test("Regular users should only receive nearby markers", async () => {
+        const token = await getAuthToken();
+
+        const res = await request(app)
+            .get("/markers/nearby?lat=43.038&lng=-71.451")
+            .set("Authorization", `Bearer ${token}`);
+
+        expect(res.status).toBe(200);
+        expect(Array.isArray(res.body.markers)).toBe(true);
+
+        for (const marker of res.body.markers) {
+            expect(marker.distance_meters).toBeLessThanOrEqual(200);
+        }
+    });
 });
 
 afterAll(async () => {

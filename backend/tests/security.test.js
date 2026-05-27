@@ -133,6 +133,16 @@ describe("Security Tests", () => {
         expect(res.statusCode).toBe(403);
         expect(res.body.error).toBe("Cannot equip items you have not collected");
     });
+
+    test("Regular users should not access all markers", async () => {
+        const token = await getAuthToken();
+
+        const res = await request(app)
+            .get("/admin/markers")
+            .set("Authorization", `Bearer ${token}`);
+
+        expect(res.status).toBe(403);
+    });
 });
 
 afterAll(async () => {

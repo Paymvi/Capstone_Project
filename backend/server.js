@@ -41,6 +41,21 @@ const allowedOrigins = [
   "http://192.168.4.136:5173"
 ]
 
+const MARKER_REVEAL_RADIUS_METERS = 200;
+
+function isValidCoordinate(lat, lng) {
+  return (
+    typeof lat === "number" &&
+    typeof lng === "number" &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+  );
+}
+
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin, like Postman/curl
@@ -300,10 +315,6 @@ app.get("/me/state", authMiddleware, async (req, res) => {
       [userId]
     );
 
-    const markers = await pool.query(
-      `SELECT latitude, longitude FROM markers`
-    );
-
     res.json({
       userId,
       is_admin: userResult.rows[0].is_admin,
@@ -313,7 +324,6 @@ app.get("/me/state", authMiddleware, async (req, res) => {
         body_item_id: null,
         outside_item_id: null
       },
-      markers: markers.rows
     });
 
   } catch (err) {
@@ -928,6 +938,91 @@ if (process.env.NODE_ENV !== "test") {
     console.log(`Server running on port ${PORT}`);
   });
 }
+
+app.get("/markers/nearby", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    const lat = Number(req.query.lat);
+    const lng = Number(req.query.lng);
+
+    if (!isValidCoordinate(lat, lng)) {
+      return res.status(400).json({ error: "Invalid latitude or longitude" });
+    }
+
+    const result = await pool.query(
+      `
+      WITH nearby_markers AS (
+        SELECT
+          m.id,
+          m.item_id,
+          m.latitude,
+          m.longitude,
+          i.name,
+          i.type,
+          i.image,
+          i.description,
+          (
+            6371000 * 2 * asin(
+              sqrt(
+                power(sin(radians(m.latitude - $1) / 2), 2) +
+                cos(radians($1)) *
+                cos(radians(m.latitude)) *
+                power(sin(radians(m.longitude - $2) / 2), 2)
+              )
+            )
+          ) AS distance_meters
+        FROM markers m
+        JOIN items i ON m.item_id = i.item_id
+        LEFT JOIN user_inventory ui
+          ON ui.user_id = $3
+          AND ui.item_id = m.item_id
+        WHERE ui.id IS NULL
+      )
+      SELECT
+        id,
+        item_id,
+        latitude,
+        longitude,
+        name,
+        type,
+        image,
+        description,
+        distance_meters
+      FROM nearby_markers
+      WHERE distance_meters <= $4
+      ORDER BY distance_meters ASC
+      `,
+      [lat, lng, userId, MARKER_REVEAL_RADIUS_METERS]
+    );
+
+    res.json({ markers: result.rows });
+  } catch (err) {
+    console.error("Nearby markers error:", err);
+    res.status(500).json({ error: "Failed to load nearby markers" });
+  }
+});
+
+app.get("/admin/markers", authMiddleware, async (req, res) => {
+  try {
+    if (!req.user.is_admin) {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const result = await pool.query(
+      `
+      SELECT id, item_id, latitude, longitude, created_at
+      FROM markers
+      ORDER BY created_at DESC
+      `
+    );
+
+    res.json({ markers: result.rows });
+  } catch (err) {
+    console.error("Admin markers error:", err);
+    res.status(500).json({ error: "Failed to load markers" });
+  }
+});
 
 export default app;
 
