@@ -31,7 +31,7 @@ describe("Security Tests", () => {
         expect([400, 403]).toContain(res.statusCode);
     })
 
-    test("Should fail with incorrect credentials", async () => {
+    test("Should fail login with existing username but incorrect password", async () => {
         const username = `wrongpassuser_${Date.now()}`;
         const password = "StrongPass123!";
 
@@ -46,7 +46,53 @@ describe("Security Tests", () => {
                 password: "WrongPass123!"
             });
 
-        expect([401, 403]).toContain(res.statusCode);
+        expect(res.statusCode).toBe(401);
+        expect(res.body.error).toBe("Invalid credentials");
+        expect(res.body.token).toBeUndefined();
+    });
+
+    test("Should fail login with non-existing username", async () => {
+        const res = await request(app)
+            .post("/auth/login")
+            .send({
+            username: `doesnotexist_${Date.now()}`,
+            password: "WrongPass123!"
+            });
+
+        expect(res.statusCode).toBe(401);
+        expect(res.body.error).toBe("Invalid credentials");
+        expect(res.body.token).toBeUndefined();
+    });
+
+    test("Should not reveal whether username exists during failed login", async () => {
+        const username = `enumuser_${Date.now()}`;
+        const password = "StrongPass123!";
+
+        await request(app)
+            .post("/auth/register")
+            .send({ username, password });
+
+        const existingUserWrongPassword = await request(app)
+            .post("/auth/login")
+            .send({
+            username,
+            password: "WrongPass123!"
+            });
+
+        const nonExistingUser = await request(app)
+            .post("/auth/login")
+            .send({
+            username: `fakeuser_${Date.now()}`,
+            password: "WrongPass123!"
+            });
+
+        expect(existingUserWrongPassword.statusCode).toBe(401);
+        expect(nonExistingUser.statusCode).toBe(401);
+
+        expect(existingUserWrongPassword.body.error).toBe("Invalid credentials");
+        expect(nonExistingUser.body.error).toBe("Invalid credentials");
+
+        expect(existingUserWrongPassword.body).toEqual(nonExistingUser.body);
     });
 
     test("Rate limit or lockout triggers", async () => { 

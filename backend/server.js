@@ -783,7 +783,7 @@ app.post("/auth/login", loginLimiter, async (req, res) => {
       );
       
       return res.status(403).json({
-        error: "Account is temporarily locked.", 
+        error: "Login unavailable. Please try again later.", 
         remainingTime,
       });
     }
