@@ -110,6 +110,7 @@ describe("Security Tests", () => {
         expect([403, 429]).toContain(lastResponse.statusCode);
     });
 
+    // Testing account lockout after repeated failed attempts
     test("Account locks after repeated failed attempts", async () => {
         const username = `lockuser_${Date.now()}`;
         const password = "StrongPass123!";
@@ -120,7 +121,6 @@ describe("Security Tests", () => {
 
         let response;
 
-        // Repeated wrong password attempts against the same account
         for (let i = 0; i < 5; i++) {
             response = await request(app)
                 .post("/auth/login")
@@ -128,12 +128,34 @@ describe("Security Tests", () => {
                     username,
                     password: "WrongPass123!"
                 });
-
-            expect([401, 429, 403]).toContain(response.statusCode);
         }
 
-        // After repeated failures, it should either be locked or rate-limited
-        expect([403, 429]).toContain(response.statusCode);
+        expect(response.statusCode).toBe(403);
+        expect(response.body.error).toMatch(/locked|unavailable|try again/i);
+    });
+
+    // Testing rate limiting on login endpoint
+    test("Rate limits repeated login attempts", async () => {
+        const username = `ratelimituser_${Date.now()}`;
+        const password = "StrongPass123!";
+
+        await request(app)
+            .post("/auth/register")
+            .send({ username, password });
+
+        let response;
+
+        for (let i = 0; i < 10; i++) {
+            response = await request(app)
+                .post("/auth/login")
+                .send({
+                    username,
+                    password: "WrongPass123!"
+                });
+        }
+
+        expect(response.statusCode).toBe(429);
+        expect(response.body.error).toMatch(/too many/i);
     });
 
     test("Passwords are stored hashed (not plaintext)", async () => {

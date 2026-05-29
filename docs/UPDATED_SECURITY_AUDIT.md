@@ -493,10 +493,10 @@ console.log("Done. Full inventory unlocked.");
 | VULN-001 | Unauthenticated `GET /users` dumps all accounts | Critical | **(No Login Required)** | Browser / curl | Solved | `GET /users` enforces authorization after a user has been authenticated. This required the process of updating middleWare functions and implementing cookies for the web browser version, rather than tokens because JavaScript can't read them. Reducing theft through XSS. |
 | VULN-002 | `GET /tables` exposes DB schema, no auth | Critical | **(No Login Required)** | Browser navigation | Solved | Similar to VULN-001, `GET /tables` had no authentication and authorization checks. |
 | VULN-003 | Collect any item via API, no proximity check | Critical | Yes | Browser console `fetch()` | Solved | Proximity check is done in the backend to enforce game rules. Frontend is not an appropriate method for enforcing Roamie's logic. |
-| VULN-004 | Equip items not in inventory | High | Yes | Browser console `fetch()` | Not solved | 
-| VULN-005 | All marker coordinates revealed on login | High | Yes | Browser console `fetch()` | Not solved | 
-| VULN-006 | Username enumeration via error messages | High | **(No Login Required)** | Browser console `fetch()` | Not solved | 
-| VULN-007 | Unlimited brute-force login, no rate limit | High | **(No Login Required)** | Browser console loop | Not solved | 
+| VULN-004 | Equip items not in inventory | High | Yes | Browser console `fetch()` | Solved | 
+| VULN-005 | All marker coordinates revealed on login | High | Yes | Browser console `fetch()` | Solved | 
+| VULN-006 | Username enumeration via error messages | High | **(No Login Required)** | Browser console `fetch()` | Solved | 
+| VULN-007 | Unlimited brute-force login, no rate limit | High | **(No Login Required)** | Browser console loop | Solved | 
 | VULN-008 | Register with 1-character password | High | **(No Login Required)** | Browser console `fetch()` | Not solved | 
 | VULN-009 | JWT readable from `localStorage` | Medium | Yes | DevTools → Application | Not solved | 
 | VULN-010 | Admin route has no server-side guard | Medium | Yes | Browser navigation to `/admin` | Not solved | 

@@ -22,8 +22,8 @@ export const loginLimiter = rateLimit({
     handler: (req, res) => {
         console.warn(`RATE LIMIT TRIGGERED: ${req.ip}`);
 
-        res.status(429).json({
-        error: "Too many login attempts. Please try again later."
+        return res.status(429).json({
+            error: "Too many login attempts. Please try again later."
         });
     }
 });

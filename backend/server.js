@@ -82,6 +82,18 @@ app.use(cors({
 
 app.use(express.json());
 
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Too many requests. Please try again later.",
+  },
+});
+
+app.use(apiLimiter);
+
 app.use((req, res, next) => {
   console.log(req.method, req.url);
   next();
@@ -835,7 +847,7 @@ app.post("/auth/login", loginLimiter, async (req, res) => {
             );
 
             return res.status(403).json({
-              error: "Account locked due to too many failed attempts.",
+              error: "Login unavailable. Please try again later.",
               remainingTime: 5 * 60,
             });
           }
