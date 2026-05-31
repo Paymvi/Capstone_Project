@@ -81,6 +81,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use(cookieParser());
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -121,6 +122,15 @@ function getDistanceMeters(lat1, lng1, lat2, lng2){
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
   return R * c;
+}
+
+function setAuthCookie(res, token) {
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    maxAge: 60 * 60 * 1000, // 1 hour
+  });
 }
 
 // ---------- routes ----------
@@ -260,7 +270,17 @@ app.post("/auth/google", async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    res.json({ token: appToken, user });
+    setAuthCookie(res, appToken);
+
+    return res.json({
+      message: "Google login successful",
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        is_admin: user.is_admin || false,
+      },
+    });
 
   } catch (err) {
     console.error(err);
@@ -742,13 +762,20 @@ app.post("/auth/register", loginLimiter, async (req, res) => {
     // If request is from browser -> set cookie
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // true on HTTPS production
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      maxAge: 60 * 60 * 1000,
     });
 
-    // Return token for mobile clients
-    return res.json({ token, user });
+    // Return user info only. JWT is stored in HttpOnly cookie.
+    return res.json({
+      message: "Login successful",
+      user: {
+        id: user.id,
+        username: user.username,
+        is_admin: user.is_admin,
+      },
+    });
   } catch (err) {
     // Only rollback if transaction started
     if (transactionStarted) {
@@ -886,7 +913,17 @@ app.post("/auth/login", loginLimiter, async (req, res) => {
     );
 
     // Return token for (for mobile clients)
-    res.json({ token, user });
+    setAuthCookie(res, token);
+
+    return res.json({
+      message: "Login successful",
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        is_admin: user.is_admin || false,
+      },
+    });
   } catch (err) {
     // Zod validation errors
     if(err.name === "ZodError"){
@@ -1036,6 +1073,16 @@ app.get("/admin/markers", authMiddleware, async (req, res) => {
   }
 });
 
+app.post("/auth/logout", (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  });
+
+  res.json({ message: "Logged out successfully" });
+});
+
 export default app;
 
 app.get("/tables", authMiddleware, requireAdmin, async (req, res) => {
@@ -1062,5 +1109,3 @@ app.get("/test-db", async (req, res) => {
 app.get("/health", (req, res) => {
   res.json({ status: "ok", message: "Backend is reachable" });
 });
-
-app.use(cookieParser());

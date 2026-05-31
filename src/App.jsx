@@ -3,11 +3,11 @@ import './App.css'
 import 'leaflet/dist/leaflet.css';
 import { Routes, Route, useNavigate, NavLink } from "react-router-dom";
 
-import { apiGetState, apiAddMarker, apiSetEquipped } from "./api";
+import { apiGetState, apiAddMarker, apiSetEquipped, apiLogout } from "./api";
 
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
-const DEV_MODE = true;
+const DEV_MODE = false;
 
 
 import BackgroundMusic from "./components/BackgroundMusic"
@@ -64,7 +64,7 @@ function TabBar() {
 }
 
 function App() {
-  const [token, setToken] = useState(localStorage.getItem("token"));
+  const [authChecked, setAuthChecked] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
   const [introDone, setIntroDone] = useState(false);
   const musicRef = useRef(null);
@@ -100,8 +100,14 @@ function App() {
     setMusicPlaying(musicRef.current.isPlaying);
   };
 
-  const handleLogout = (e) => {
+  const handleLogout = async (e) => {
     e.stopPropagation();
+
+    try {
+      await apiLogout();
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
 
     const audio = new Audio("/jingle-3.wav");
     audio.volume = 0.6;
@@ -110,8 +116,15 @@ function App() {
     localStorage.removeItem("userId");
 
     audio.play();
+
     setUserId(null);
-    setToken(null);
+    setUser(null);
+    setCollectedItems([]);
+    setEquipped({
+      hat: null,
+      body: null,
+      outside: null,
+    });
   };
 
   const toggleMenu = (e) => {
@@ -143,44 +156,46 @@ function App() {
 
   const [markers, setMarkers] = useState([]);
 
-  // Auto-login if saved
+  // Check if the HttpOnly cookie is still valid
   useEffect(() => {
-    const savedToken = localStorage.getItem("token");
+    async function checkExistingLogin() {
+      try {
+        const data = await apiGetState();
 
-    if (!savedToken) return;
-      setToken(savedToken);
+        setUserId(data.userId);
 
-      // try loading state
-      apiGetState()
-        .then((data) => {
-          setUserId(data.userId);
-
-          setUser({
-            id: data.userId,
-            is_admin: data.is_admin // might be undefined depending on backend
-          });          
-
-          setCollectedItems(data.collectedItems || []);
-          setEquipped({
-            hat: data.equipped?.hat_item_id || null,
-            body: data.equipped?.body_item_id || null,
-            outside: data.equipped?.outside_item_id || null,
-          });
-
-          if (data.markers) {
-            setMarkers(
-              data.markers.map(m => ({
-                latlng: [m.latitude, m.longitude]
-              }))
-            );
-          }
-        })
-        .catch(() => {
-          console.log("Invalid token, forcing login");
-          localStorage.removeItem("token");
-          setUserId(null);
+        setUser({
+          id: data.userId,
+          is_admin: data.is_admin,
         });
-    
+
+        setCollectedItems(data.collectedItems || []);
+
+        setEquipped({
+          hat: data.equipped?.hat_item_id || null,
+          body: data.equipped?.body_item_id || null,
+          outside: data.equipped?.outside_item_id || null,
+        });
+
+        if (data.markers) {
+          setMarkers(
+            data.markers.map((m) => ({
+              latlng: [m.latitude, m.longitude],
+            }))
+          );
+        }
+      } catch (err) {
+        console.log("No valid login cookie found");
+        localStorage.removeItem("token");
+        localStorage.removeItem("userId");
+        setUserId(null);
+        setUser(null);
+      } finally {
+        setAuthChecked(true);
+      }
+    }
+
+    checkExistingLogin();
   }, []);
 
   // Verify token
@@ -250,6 +265,10 @@ function App() {
 
   console.log("CLIENT ID:", import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
+  if (!authChecked) {
+    return <div>Loading...</div>;
+  }
+
   if (showIntro && !introDone) {
     return (
       <RaccoonIntro
@@ -267,7 +286,6 @@ return (
       <Login
         onLoggedIn={(id) => {
           setUserId(id);
-          setToken(localStorage.getItem("token"));
           setShowIntro(true); // 🔥 trigger intro
         }}
       />

@@ -27,7 +27,7 @@ export default function AdminPage() {
 
     const token = localStorage.getItem("token");
 
-    const res = await fetch("http://localhost:3000/admin/markers", {
+    const res = await fetch("http://localhost:5000/admin/markers", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
