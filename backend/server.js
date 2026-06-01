@@ -146,26 +146,27 @@ app.get("/", (req, res) => {
 });
 
 // Creates a new user account
-app.post("/users", async (req, res) => {
-  const { email, name } = req.body;
-
+app.post("/users", authMiddleware, requireAdmin, async (req, res) => {
   try {
+    const { username, email, name } = req.body;
+
+    if (!username || !email || !name) {
+      return res.status(400).json({ error: "Invalid request" });
+    }
+
     const result = await pool.query(
-      "INSERT INTO users (email, name) VALUES ($1, $2) RETURNING *",
-      [email, name]
+      `
+      INSERT INTO users (username, email, name)
+      VALUES ($1, $2, $3)
+      RETURNING id, username, email, name
+      `,
+      [username, email, name]
     );
 
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error(err);
-
-    if (err.code === "23505") {
-      return res.status(409).json({
-        error: "Username already exists!",
-      });
-    }
-
-    res.status(500).json({ error: err.message });
+    console.error("Create user error:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -181,7 +182,8 @@ app.get("/admin/users", authMiddleware, requireAdmin, async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    console.error("Helpful backend-only error label:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -360,7 +362,8 @@ app.get("/me/state", authMiddleware, async (req, res) => {
 
   } catch (err) {
     console.error("STATE ERROR:", err);
-    res.status(500).json({ error: err.message });
+    console.error("Helpful backend-only error label:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -370,7 +373,8 @@ app.get("/items", async (req, res) => {
     const result = await pool.query("SELECT * FROM items");
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Helpful backend-only error label:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -497,7 +501,8 @@ app.post("/items/collect", authMiddleware, antiSpoofMiddleware, async (req, res)
 
   } catch (err) {
     console.error("COLLECT ERROR:", err);
-    res.status(500).json({ error: err.message });
+    console.error("Helpful backend-only error label:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -618,7 +623,8 @@ app.put("/equip", authMiddleware, async (req, res) => {
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    console.error("Helpful backend-only error label:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -693,7 +699,8 @@ app.get("/markers", authMiddleware, async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error("MARKERS ERROR:", err);
-    res.status(500).json({ error: err.message });
+    console.error("Helpful backend-only error label:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -1102,7 +1109,8 @@ app.get("/test-db", async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error("DB TEST ERROR:", err);
-    res.status(500).json({ error: err.message });
+    console.error("Helpful backend-only error label:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 

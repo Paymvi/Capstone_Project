@@ -498,7 +498,7 @@ console.log("Done. Full inventory unlocked.");
 | VULN-006 | Username enumeration via error messages | High | **(No Login Required)** | Browser console `fetch()` | Solved | 
 | VULN-007 | Unlimited brute-force login, no rate limit | High | **(No Login Required)** | Browser console loop | Solved | 
 | VULN-008 | Register with 1-character password | High | **(No Login Required)** | Browser console `fetch()` | Solved | 
-| VULN-009 | JWT readable from `localStorage` | Medium | Yes | DevTools → Application | Not solved | 
+| VULN-009 | JWT readable from `localStorage` | Medium | Yes | DevTools → Application | Solved | 
 | VULN-010 | Admin route has no server-side guard | Medium | Yes | Browser navigation to `/admin` | Not solved | 
 | VULN-011 | Create arbitrary users unauthenticated | Medium | **(No Login Required)** | Browser console `fetch()` | Not solved | 
 | VULN-012 | Verbose DB errors leak schema details | Medium | **(No Login Required)** | Browser console `fetch()` | Not solved | 
