@@ -1059,7 +1059,7 @@ app.get("/markers/nearby", authMiddleware, async (req, res) => {
   }
 });
 
-app.get("/admin/markers", authMiddleware, async (req, res) => {
+app.get("/admin/markers", authMiddleware, requireAdmin,async (req, res) => {
   try {
     if (!req.user.is_admin) {
       return res.status(403).json({ error: "Admin access required" });

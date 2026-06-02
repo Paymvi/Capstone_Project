@@ -499,7 +499,7 @@ console.log("Done. Full inventory unlocked.");
 | VULN-007 | Unlimited brute-force login, no rate limit | High | **(No Login Required)** | Browser console loop | Solved | 
 | VULN-008 | Register with 1-character password | High | **(No Login Required)** | Browser console `fetch()` | Solved | 
 | VULN-009 | JWT readable from `localStorage` | Medium | Yes | DevTools → Application | Solved | 
-| VULN-010 | Admin route has no server-side guard | Medium | Yes | Browser navigation to `/admin` | Not solved | 
+| VULN-010 | Admin route has no server-side guard | Medium | Yes | Browser navigation to `/admin` | Solved | 
 | VULN-011 | Create arbitrary users unauthenticated | Medium | **(No Login Required)** | Browser console `fetch()` | Not solved | 
-| VULN-012 | Verbose DB errors leak schema details | Medium | **(No Login Required)** | Browser console `fetch()` | Not solved | 
+| VULN-012 | Verbose DB errors leak schema details | Medium | **(No Login Required)** | Browser console `fetch()` | Solved | 
 | VULN-013 | GPS coordinates logged to console | Low | Yes | DevTools → Console tab | Solved | Wrap console message in conditional statement to ensure only developers can view live location for testing. |
