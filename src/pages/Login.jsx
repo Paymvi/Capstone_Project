@@ -309,13 +309,15 @@ export default function Login({ onLoggedIn }) {
               maxLength={50}
             />
 
-            <p style={{ frontSize: "12px", color: "#a5009f"}}>
+            <p style={{ fontSize: "12px", color: "#a5009f"}}>
               {50 - password.length} characters remaining 
             </p>
 
-            {password.length > 0 && (
-              <PasswordStrengthBar password={password} animate={animate}/>
-            )}
+            <div className="password-strength-space">
+              {password.length > 0 && (
+                <PasswordStrengthBar password={password} />
+              )}
+            </div>
 
             {error && (
               <p style={{color: "red", marginBottom: "10px"}}>
