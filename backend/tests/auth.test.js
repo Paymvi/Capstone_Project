@@ -1,6 +1,5 @@
 import request from "supertest";
 import app from "../server.js";
-import jwt from "jsonwebtoken";
 import pool from "../db.js";
 import { describe, test, expect, afterAll } from "@jest/globals";
 
@@ -31,39 +30,6 @@ describe("Authorization Tests", () => {
         expect(res.statusCode).toBe(400);
     })
 
-    test("Login returns JWT token", async () => {
-        const username = `user_${Date.now()}`;
-        const password = "StrongPass123!";
-
-        await request(app)
-            .post("/auth/register")
-            .send({ username, password });
-
-        const res = await request(app)
-            .post("/auth/login")
-            .send({ username, password });
-
-        expect(res.statusCode).toBe(200);
-        expect(res.body.token).toBeDefined();
-    });
-
-    test("JWT contains correct user data", async () => {
-        const username = `user_${Date.now()}`;
-        const password = "StrongPass123!";
-
-        await request(app)
-            .post("/auth/register")
-            .send({ username, password });
-
-        const res = await request(app)
-            .post("/auth/login")
-            .send({ username, password });
-
-        const decoded = jwt.verify(res.body.token, process.env.JWT_SECRET);
-
-        expect(decoded.userId).toBeDefined();
-        expect(decoded.is_admin).toBeDefined();
-    });
 
     test("Protected route requires authentication", async () => {
         const res = await request(app)
@@ -79,5 +45,42 @@ describe("Authorization Tests", () => {
 
         expect(res.statusCode).toBe(401);
     })
+
+    test("Should block unauthenticated user creation through /users", async () => {
+        const res = await request(app)
+            .post("/users")
+            .send({
+            username: `ghost_${Date.now()}`,
+            email: `ghost_${Date.now()}@example.com`,
+            name: "Ghost User",
+            });
+
+        expect(res.statusCode).toBe(401);
+    });
+
+    test("Should block non-admin user creation through /users", async () => {
+        const agent = request.agent(app);
+
+        const username = `normal_${Date.now()}`;
+        const password = "StrongPass123!";
+
+        await agent
+            .post("/auth/register")
+            .send({ username, password });
+
+        await agent
+            .post("/auth/login")
+            .send({ username, password });
+
+        const res = await agent
+            .post("/users")
+            .send({
+            username: `ghost_${Date.now()}`,
+            email: `ghost_${Date.now()}@example.com`,
+            name: "Ghost User",
+            });
+
+        expect(res.statusCode).toBe(403);
+    });
 
 });

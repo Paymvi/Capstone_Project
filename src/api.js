@@ -1,44 +1,63 @@
 const API = import.meta.env.VITE_API_URL;
 
-console.log("API URL:", import.meta.env.VITE_API_URL);
+console.log("API URL:", API);
 
 export function authHeaders() {
-  const token = localStorage.getItem("token");
-
   return {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`
   };
+}
+
+async function handleResponse(res, fallbackMessage) {
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    console.error("BACKEND ERROR:", data);
+    throw new Error(data.error || fallbackMessage);
+  }
+
+  return data;
+}
+
+async function apiFetch(path, options = {}) {
+  return fetch(`${API}${path}`, {
+    ...options,
+
+    // Important:
+    // This lets the browser send/receive the HttpOnly auth cookie.
+    credentials: "include",
+
+    headers: {
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...(options.headers || {}),
+    },
+  });
 }
 
 // Login API
 export async function apiPasswordLogin(username, password) {
   const res = await fetch(`${API}/auth/login`, {
     method: "POST",
+    credentials: "include",
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      username,
-      password
-    })
+    body: JSON.stringify({ username, password }),
   });
 
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-
     throw new Error(data.error || "Login failed");
   }
 
   return res.json();
 }
 
-
 // Get user state
 export async function apiGetState() {
   const res = await fetch(`${API}/me/state`, {
     method: "GET",
-    headers: authHeaders()
+    credentials: "include",
   });
 
   if (!res.ok) {
@@ -48,140 +67,110 @@ export async function apiGetState() {
   return res.json();
 }
 
-
 // Add marker
 export async function apiAddMarker(lat, lng, item_id) {
-  const token = localStorage.getItem("token");
-
-  const res = await fetch(`${API}/markers`, {
+  const res = await apiFetch("/markers", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
     body: JSON.stringify({
-      lat: lat,
-      lng: lng,
-      item_id: item_id, // 🔥 MUST BE HERE
+      lat,
+      lng,
+      item_id,
     }),
   });
 
-  return res.json();
+  return handleResponse(res, "Failed to add marker");
 }
-
 
 // Set equipped items
 export async function apiSetEquipped(hat, body, outside) {
-  const token = localStorage.getItem("token");
-
-  const res = await fetch(`${API}/equip`, {
+  const res = await apiFetch("/equip", {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`
-    },
     body: JSON.stringify({
       hat,
       body,
-      outside
-    })
+      outside,
+    }),
   });
 
-  if (!res.ok) {
-    throw new Error("Failed to save equipped");
-  }
-
-  return res.json();
+  return handleResponse(res, "Failed to save equipped");
 }
-
 
 // Collect item
 export async function apiSetCollected({ markerId, itemId, lat, lng }) {
-  const res = await fetch(`${API}/items/collect`, {
+  const res = await apiFetch("/items/collect", {
     method: "POST",
-    headers: authHeaders(),
     body: JSON.stringify({
       markerId,
       itemId,
       lat,
-      lng
-    })
+      lng,
+    }),
   });
 
-  const data = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    console.error("BACKEND ERROR:", data);
-    throw new Error(data.error || "Collect failed");
-  }
-
-  return data;
+  return handleResponse(res, "Collect failed");
 }
 
-//Get items
+// Get items
 export async function apiGetItems() {
-  const res = await fetch(`${API}/items`);
-  return res.json();
+  const res = await apiFetch("/items", {
+    method: "GET",
+  });
+
+  return handleResponse(res, "Failed to fetch items");
 }
 
 // Register API
 export async function apiRegister(username, password) {
-  const res = await fetch(`${API}/auth/register`, {
+  const res = await apiFetch("/auth/register", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
     body: JSON.stringify({
       username,
-      password
-    })
+      password,
+    }),
   });
 
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.error || "Register failed");
-  }
-
-  return data;
+  return handleResponse(res, "Register failed");
 }
-
 
 // Google login
 export async function apiGoogleLogin(token) {
-  const res = await fetch(`${API}/auth/google`, {
+  const res = await apiFetch("/auth/google", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
     body: JSON.stringify({
-      token
-    })
+      token,
+    }),
   });
 
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.error || "Google login failed");
-  }
-
-  return data;
+  return handleResponse(res, "Google login failed");
 }
 
-// Get Item Drop Markers
+// Get item drop markers
 export async function apiGetMarkers() {
-  const token = localStorage.getItem("token");
-    console.log("GET MARKERS TOKEN:", token);
-
-  const res = await fetch(`${API}/markers`, {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
+  const res = await apiFetch("/markers", {
+    method: "GET",
   });
 
-  if(!res.ok){
-      console.log("GET MARKERS TOKEN:", token);
-    throw new Error("Failed to fetch markers");
+  return handleResponse(res, "Failed to fetch markers");
+}
+
+export async function apiGetNearbyMarkers(lat, lng) {
+  const res = await apiFetch(`/markers/nearby?lat=${lat}&lng=${lng}`, {
+    method: "GET",
+  });
+
+  const data = await handleResponse(res, "Failed to fetch nearby markers");
+
+  return data.markers;
+}
+
+export async function apiLogout() {
+  const res = await fetch(`${API}/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    throw new Error("Logout failed");
   }
 
   return res.json();

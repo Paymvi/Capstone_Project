@@ -31,7 +31,7 @@ describe("Security Tests", () => {
         expect([400, 403]).toContain(res.statusCode);
     })
 
-    test("Should fail with incorrect credentials", async () => {
+    test("Should fail login with existing username but incorrect password", async () => {
         const username = `wrongpassuser_${Date.now()}`;
         const password = "StrongPass123!";
 
@@ -46,7 +46,53 @@ describe("Security Tests", () => {
                 password: "WrongPass123!"
             });
 
-        expect([401, 403]).toContain(res.statusCode);
+        expect(res.statusCode).toBe(401);
+        expect(res.body.error).toBe("Invalid credentials");
+        expect(res.body.token).toBeUndefined();
+    });
+
+    test("Should fail login with non-existing username", async () => {
+        const res = await request(app)
+            .post("/auth/login")
+            .send({
+            username: `doesnotexist_${Date.now()}`,
+            password: "WrongPass123!"
+            });
+
+        expect(res.statusCode).toBe(401);
+        expect(res.body.error).toBe("Invalid credentials");
+        expect(res.body.token).toBeUndefined();
+    });
+
+    test("Should not reveal whether username exists during failed login", async () => {
+        const username = `enumuser_${Date.now()}`;
+        const password = "StrongPass123!";
+
+        await request(app)
+            .post("/auth/register")
+            .send({ username, password });
+
+        const existingUserWrongPassword = await request(app)
+            .post("/auth/login")
+            .send({
+            username,
+            password: "WrongPass123!"
+            });
+
+        const nonExistingUser = await request(app)
+            .post("/auth/login")
+            .send({
+            username: `fakeuser_${Date.now()}`,
+            password: "WrongPass123!"
+            });
+
+        expect(existingUserWrongPassword.statusCode).toBe(401);
+        expect(nonExistingUser.statusCode).toBe(401);
+
+        expect(existingUserWrongPassword.body.error).toBe("Invalid credentials");
+        expect(nonExistingUser.body.error).toBe("Invalid credentials");
+
+        expect(existingUserWrongPassword.body).toEqual(nonExistingUser.body);
     });
 
     test("Rate limit or lockout triggers", async () => { 
@@ -64,6 +110,7 @@ describe("Security Tests", () => {
         expect([403, 429]).toContain(lastResponse.statusCode);
     });
 
+    // Testing account lockout after repeated failed attempts
     test("Account locks after repeated failed attempts", async () => {
         const username = `lockuser_${Date.now()}`;
         const password = "StrongPass123!";
@@ -74,7 +121,6 @@ describe("Security Tests", () => {
 
         let response;
 
-        // Repeated wrong password attempts against the same account
         for (let i = 0; i < 5; i++) {
             response = await request(app)
                 .post("/auth/login")
@@ -82,12 +128,34 @@ describe("Security Tests", () => {
                     username,
                     password: "WrongPass123!"
                 });
-
-            expect([401, 429, 403]).toContain(response.statusCode);
         }
 
-        // After repeated failures, it should either be locked or rate-limited
-        expect([403, 429]).toContain(response.statusCode);
+        expect(response.statusCode).toBe(403);
+        expect(response.body.error).toMatch(/locked|unavailable|try again/i);
+    });
+
+    // Testing rate limiting on login endpoint
+    test("Rate limits repeated login attempts", async () => {
+        const username = `ratelimituser_${Date.now()}`;
+        const password = "StrongPass123!";
+
+        await request(app)
+            .post("/auth/register")
+            .send({ username, password });
+
+        let response;
+
+        for (let i = 0; i < 10; i++) {
+            response = await request(app)
+                .post("/auth/login")
+                .send({
+                    username,
+                    password: "WrongPass123!"
+                });
+        }
+
+        expect(response.statusCode).toBe(429);
+        expect(response.body.error).toMatch(/too many/i);
     });
 
     test("Passwords are stored hashed (not plaintext)", async () => {
@@ -132,6 +200,16 @@ describe("Security Tests", () => {
 
         expect(res.statusCode).toBe(403);
         expect(res.body.error).toBe("Cannot equip items you have not collected");
+    });
+
+    test("Regular users should not access all markers", async () => {
+        const token = await getAuthToken();
+
+        const res = await request(app)
+            .get("/admin/markers")
+            .set("Authorization", `Bearer ${token}`);
+
+        expect(res.status).toBe(403);
     });
 });
 

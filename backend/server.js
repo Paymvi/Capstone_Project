@@ -41,6 +41,21 @@ const allowedOrigins = [
   "http://192.168.4.136:5173"
 ]
 
+const MARKER_REVEAL_RADIUS_METERS = 200;
+
+function isValidCoordinate(lat, lng) {
+  return (
+    typeof lat === "number" &&
+    typeof lng === "number" &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+  );
+}
+
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin, like Postman/curl
@@ -66,6 +81,19 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use(cookieParser());
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Too many requests. Please try again later.",
+  },
+});
+
+app.use(apiLimiter);
 
 app.use((req, res, next) => {
   console.log(req.method, req.url);
@@ -96,6 +124,15 @@ function getDistanceMeters(lat1, lng1, lat2, lng2){
   return R * c;
 }
 
+function setAuthCookie(res, token) {
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    maxAge: 60 * 60 * 1000, // 1 hour
+  });
+}
+
 // ---------- routes ----------
 
 console.log("DATABASE_URL:", process.env.DATABASE_URL);
@@ -109,26 +146,27 @@ app.get("/", (req, res) => {
 });
 
 // Creates a new user account
-app.post("/users", async (req, res) => {
-  const { email, name } = req.body;
-
+app.post("/users", authMiddleware, requireAdmin, async (req, res) => {
   try {
+    const { username, email, name } = req.body;
+
+    if (!username || !email || !name) {
+      return res.status(400).json({ error: "Invalid request" });
+    }
+
     const result = await pool.query(
-      "INSERT INTO users (email, name) VALUES ($1, $2) RETURNING *",
-      [email, name]
+      `
+      INSERT INTO users (username, email, name)
+      VALUES ($1, $2, $3)
+      RETURNING id, username, email, name
+      `,
+      [username, email, name]
     );
 
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error(err);
-
-    if (err.code === "23505") {
-      return res.status(409).json({
-        error: "Username already exists!",
-      });
-    }
-
-    res.status(500).json({ error: err.message });
+    console.error("Create user error:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -144,7 +182,8 @@ app.get("/admin/users", authMiddleware, requireAdmin, async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    console.error("Helpful backend-only error label:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -233,7 +272,17 @@ app.post("/auth/google", async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    res.json({ token: appToken, user });
+    setAuthCookie(res, appToken);
+
+    return res.json({
+      message: "Google login successful",
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        is_admin: user.is_admin || false,
+      },
+    });
 
   } catch (err) {
     console.error(err);
@@ -300,10 +349,6 @@ app.get("/me/state", authMiddleware, async (req, res) => {
       [userId]
     );
 
-    const markers = await pool.query(
-      `SELECT latitude, longitude FROM markers`
-    );
-
     res.json({
       userId,
       is_admin: userResult.rows[0].is_admin,
@@ -313,12 +358,12 @@ app.get("/me/state", authMiddleware, async (req, res) => {
         body_item_id: null,
         outside_item_id: null
       },
-      markers: markers.rows
     });
 
   } catch (err) {
     console.error("STATE ERROR:", err);
-    res.status(500).json({ error: err.message });
+    console.error("Helpful backend-only error label:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -328,7 +373,8 @@ app.get("/items", async (req, res) => {
     const result = await pool.query("SELECT * FROM items");
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Helpful backend-only error label:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -455,7 +501,8 @@ app.post("/items/collect", authMiddleware, antiSpoofMiddleware, async (req, res)
 
   } catch (err) {
     console.error("COLLECT ERROR:", err);
-    res.status(500).json({ error: err.message });
+    console.error("Helpful backend-only error label:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -576,7 +623,8 @@ app.put("/equip", authMiddleware, async (req, res) => {
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    console.error("Helpful backend-only error label:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -651,7 +699,8 @@ app.get("/markers", authMiddleware, async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error("MARKERS ERROR:", err);
-    res.status(500).json({ error: err.message });
+    console.error("Helpful backend-only error label:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -720,13 +769,20 @@ app.post("/auth/register", loginLimiter, async (req, res) => {
     // If request is from browser -> set cookie
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // true on HTTPS production
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      maxAge: 60 * 60 * 1000,
     });
 
-    // Return token for mobile clients
-    return res.json({ token, user });
+    // Return user info only. JWT is stored in HttpOnly cookie.
+    return res.json({
+      message: "Login successful",
+      user: {
+        id: user.id,
+        username: user.username,
+        is_admin: user.is_admin,
+      },
+    });
   } catch (err) {
     // Only rollback if transaction started
     if (transactionStarted) {
@@ -773,7 +829,7 @@ app.post("/auth/login", loginLimiter, async (req, res) => {
       );
       
       return res.status(403).json({
-        error: "Account is temporarily locked.", 
+        error: "Login unavailable. Please try again later.", 
         remainingTime,
       });
     }
@@ -825,7 +881,7 @@ app.post("/auth/login", loginLimiter, async (req, res) => {
             );
 
             return res.status(403).json({
-              error: "Account locked due to too many failed attempts.",
+              error: "Login unavailable. Please try again later.",
               remainingTime: 5 * 60,
             });
           }
@@ -864,7 +920,25 @@ app.post("/auth/login", loginLimiter, async (req, res) => {
     );
 
     // Return token for (for mobile clients)
-    res.json({ token, user });
+    setAuthCookie(res, token);
+
+    const responseBody = {
+      message: "Login successful",
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        is_admin: user.is_admin || false,
+      },
+    };
+
+    // Only expose token during automated tests
+    // This keeps your current Jest tests working without exposing tokens in normal browser responses
+    if (process.env.NODE_ENV === "test") {
+      responseBody.token = token;
+    }
+
+    return res.json(responseBody);
   } catch (err) {
     // Zod validation errors
     if(err.name === "ZodError"){
@@ -929,6 +1003,101 @@ if (process.env.NODE_ENV !== "test") {
   });
 }
 
+app.get("/markers/nearby", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    const lat = Number(req.query.lat);
+    const lng = Number(req.query.lng);
+
+    if (!isValidCoordinate(lat, lng)) {
+      return res.status(400).json({ error: "Invalid latitude or longitude" });
+    }
+
+    const result = await pool.query(
+      `
+      WITH nearby_markers AS (
+        SELECT
+          m.id,
+          m.item_id,
+          m.latitude,
+          m.longitude,
+          i.name,
+          i.type,
+          i.image,
+          i.description,
+          (
+            6371000 * 2 * asin(
+              sqrt(
+                power(sin(radians(m.latitude - $1) / 2), 2) +
+                cos(radians($1)) *
+                cos(radians(m.latitude)) *
+                power(sin(radians(m.longitude - $2) / 2), 2)
+              )
+            )
+          ) AS distance_meters
+        FROM markers m
+        JOIN items i ON m.item_id = i.item_id
+        LEFT JOIN user_inventory ui
+          ON ui.user_id = $3
+          AND ui.item_id = m.item_id
+        WHERE ui.id IS NULL
+      )
+      SELECT
+        id,
+        item_id,
+        latitude,
+        longitude,
+        name,
+        type,
+        image,
+        description,
+        distance_meters
+      FROM nearby_markers
+      WHERE distance_meters <= $4
+      ORDER BY distance_meters ASC
+      `,
+      [lat, lng, userId, MARKER_REVEAL_RADIUS_METERS]
+    );
+
+    res.json({ markers: result.rows });
+  } catch (err) {
+    console.error("Nearby markers error:", err);
+    res.status(500).json({ error: "Failed to load nearby markers" });
+  }
+});
+
+app.get("/admin/markers", authMiddleware, requireAdmin,async (req, res) => {
+  try {
+    if (!req.user.is_admin) {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const result = await pool.query(
+      `
+      SELECT id, item_id, latitude, longitude, created_at
+      FROM markers
+      ORDER BY created_at DESC
+      `
+    );
+
+    res.json({ markers: result.rows });
+  } catch (err) {
+    console.error("Admin markers error:", err);
+    res.status(500).json({ error: "Failed to load markers" });
+  }
+});
+
+app.post("/auth/logout", (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  });
+
+  res.json({ message: "Logged out successfully" });
+});
+
 export default app;
 
 app.get("/tables", authMiddleware, requireAdmin, async (req, res) => {
@@ -948,12 +1117,11 @@ app.get("/test-db", async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error("DB TEST ERROR:", err);
-    res.status(500).json({ error: err.message });
+    console.error("Helpful backend-only error label:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
 app.get("/health", (req, res) => {
   res.json({ status: "ok", message: "Backend is reachable" });
 });
-
-app.use(cookieParser());

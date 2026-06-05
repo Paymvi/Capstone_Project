@@ -208,8 +208,7 @@ export default function Login({ onLoggedIn }) {
 
       setError("");
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("userId", data.user.id);
+      localStorage.removeItem("token");
 
       onLoggedIn(data.user.id);
     } catch (err) {
@@ -247,7 +246,11 @@ export default function Login({ onLoggedIn }) {
 
       alert("🎉 Account created successfully! 🎉")
 
-      localStorage.setItem("token", data.token);
+      localStorage.removeItem("token");
+
+      if (data.user?.id) {
+        onLoggedIn(data.user.id);
+      }
 
       navigate("/");
     }
@@ -263,8 +266,7 @@ export default function Login({ onLoggedIn }) {
 
       const data = await apiGoogleLogin(token);
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("userId", data.user.id);
+      localStorage.removeItem("token");
 
       onLoggedIn(data.user.id);
 

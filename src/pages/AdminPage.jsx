@@ -1,57 +1,80 @@
 import { useEffect, useState } from "react";
 
-export default function AdminPage() {
+const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+export default function AdminPage() {
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [itemId, setItemId] = useState("");
   const [user, setUser] = useState(null);
+  const [authError, setAuthError] = useState("");
 
-  // Load current user
   useEffect(() => {
-
-    const token = localStorage.getItem("token");
-
-    fetch("http://localhost:5000/me", {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+    fetch(`${API}/me`, {
+      credentials: "include",
     })
-    .then(res => res.json())
-    .then(data => setUser(data))
-    .catch(err => console.error(err));
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
 
+        if (res.status === 401) {
+          setAuthError("unauthorized");
+          setUser(null);
+          return;
+        }
+
+        if (!res.ok) {
+          setAuthError("error");
+          setUser(null);
+          return;
+        }
+
+        setUser(data);
+      })
+      .catch((err) => {
+        console.error("Failed to load user:", err);
+        setAuthError("error");
+        setUser(null);
+      });
   }, []);
 
   async function createMarker() {
-
-    const token = localStorage.getItem("token");
-
-    const res = await fetch("http://localhost:3000/admin/markers", {
+    const res = await fetch(`${API}/admin/markers`, {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
         latitude,
         longitude,
-        item_id: itemId
-      })
+        item_id: itemId,
+      }),
     });
 
-    const data = await res.json();
-    console.log(data);
+    const data = await res.json().catch(() => ({}));
 
+    if (!res.ok) {
+      console.error("Create marker failed:", data);
+      alert(data.error || "Failed to create marker");
+      return;
+    }
+
+    console.log(data);
     alert("Marker created!");
   }
 
-    // Wait for user info
+  if (authError === "unauthorized") {
+    return <h1>401 Unauthorized</h1>;
+  }
+
+  if (authError === "error") {
+    return <h1>Unable to load admin page</h1>;
+  }
+
   if (!user) {
     return <div>Loading...</div>;
   }
 
-  // Block non-admins
   if (!user.is_admin) {
     return <h1>403 Forbidden</h1>;
   }

@@ -4,7 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import { useNavigate } from "react-router-dom";
 
-import { apiAddMarker, apiGetMarkers, apiGetItems, apiGetState  } from "../api";
+import { apiAddMarker, apiGetMarkers, apiGetItems, apiGetNearbyMarkers } from "../api";
 import { apiSetCollected } from "../api";
 import ClickHandler from "../components/ClickHandler"
 
@@ -93,19 +93,34 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
   };
 
 
-  async function loadMarkers() {
+  async function loadMarkers(positionOverride = null) {
     try {
-      const data = await apiGetMarkers();
+      let data;
+
+      if (user?.is_admin) {
+        // Admins can see all markers
+        data = await apiGetMarkers();
+      } else {
+        // Normal users only get nearby markers
+        const sourcePosition =
+          positionOverride || (DEV_MODE ? pegmanPosition : liveLocation);
+
+        if (!sourcePosition) {
+          return;
+        }
+
+        data = await apiGetNearbyMarkers(sourcePosition[0], sourcePosition[1]);
+      }
 
       console.log("MARKER DATA:", data);
 
-      const formatted = data.map(m => ({
+      const formatted = data.map((m) => ({
         id: m.id,
         latlng: [m.latitude, m.longitude],
         name: m.name,
         image: m.image,
         description: m.description,
-        item_id: m.item_id, 
+        item_id: m.item_id,
         radius: 30,
       }));
 
@@ -113,7 +128,7 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
     } catch (err) {
       console.error("Failed to load markers", err);
     }
-  } 
+  }
 
   // Handles the collection of item drops
   async function handleCollect(markerId, itemId, lat, lng) {
@@ -380,11 +395,21 @@ export default function MapScreen({ user, userId, collectedItems, setCollectedIt
 
   }, [message]);
 
-  // To load markers from the player view
+  // Load markers based on user role and location
   useEffect(() => {
     if (!userId) return;
-    loadMarkers();
-  }, [userId]);
+
+    if (user?.is_admin) {
+      loadMarkers();
+      return;
+    }
+
+    const sourcePosition = DEV_MODE ? pegmanPosition : liveLocation;
+
+    if (!sourcePosition) return;
+
+    loadMarkers(sourcePosition);
+  }, [userId, user?.is_admin, liveLocation, pegmanPosition]);
 
 
   const [currentIcon, setCurrentIcon] = useState();
