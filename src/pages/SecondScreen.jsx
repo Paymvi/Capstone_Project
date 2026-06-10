@@ -111,9 +111,11 @@ export default function SecondScreen({ userId, collectedItems, equipped, setEqui
   function AccessoriesPanel({ items, equipped, onSelect }) {
     if (!items.length) {
       return (
-        <div className="accessory-empty-state">
-          <div className="accessory-empty-icon">🎒</div>
-          <p>No accessories in this category yet.</p>
+        <div className="accessory-panel accessory-panel--empty">
+          <div className="accessory-empty-state">
+            <div className="accessory-empty-icon">🎒</div>
+            <p>No accessories in this category yet.</p>
+          </div>
         </div>
       );
     }

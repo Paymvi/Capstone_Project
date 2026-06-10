@@ -1,6 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,200..800;1,200..800&display=swap");
 @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap');
 
+
 #root {
   height: 100%;
   width: 100%;
@@ -1415,13 +1416,13 @@ button.delete:hover {
 /* Tablet */
 @media (max-width: 900px) and (orientation: landscape) {
   .avatar-container {
-    width: 120px;
-    height: 120px;
+    width: 250px;
+    height: 250px;
     bottom: 190px; /* move dog down */
   }
 
   .avatar-container > img:first-child {
-    width: 95px;
+    width: 210px;
   }
 
   .avatar-customizer {
@@ -1494,3 +1495,548 @@ button.delete:hover {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* Squished desktop / small laptop fix */
+@media (max-width: 1200px) and (min-width: 769px) {
+  .room {
+    padding-top: 70px;
+    padding-bottom: 105px;
+  }
+
+  .avatar-stage {
+    min-height: calc(100dvh - 175px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .avatar-container {
+    position: relative;
+    bottom: auto;
+    width: 170px;
+    height: 170px;
+    margin-top: 250px;
+    margin-bottom: 14px;
+    z-index: 10;
+  }
+
+  .avatar-container > img:first-child {
+    width: 145px;
+  }
+
+  .avatar-customizer-shell {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 0;
+  }
+
+  .avatar-customizer {
+    width: min(84vw, 920px);
+    margin-top: 0;
+    transform: none;
+    padding: 14px;
+    border-radius: 24px;
+  }
+
+  .accessory-panel {
+    max-height: 10px;
+  }
+}
+
+/* =========================================================
+   AVATAR SCREEN FINAL LAYOUT
+   Consistent dog size + position across screen sizes
+========================================================= */
+
+.avatar-screen {
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+.room {
+  --dog-size: clamp(220px, 26vmin, 260px);
+  --panel-width: min(680px, calc(100vw - 32px));
+  --panel-gap: clamp(14px, 2.2vh, 24px);
+  --bottom-space: 86px;
+
+  --avatar-stack-nudge: 48px;
+
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+
+  position: relative;
+  overflow: hidden;
+
+  background-image: url("/avatar-bg-screen-4.png");
+  background-size: cover;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+
+  box-sizing: border-box;
+}
+
+.avatar-stage {
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+
+  padding: 72px 16px var(--bottom-space);
+  box-sizing: border-box;
+  margin: 0;
+
+  transform: translateY(var(--avatar-stack-nudge));
+}
+
+/* Dog */
+.avatar-container {
+  position: relative !important;
+
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+
+  width: var(--dog-size) !important;
+  height: var(--dog-size) !important;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin: 0 0 var(--panel-gap) !important;
+  padding: 0 !important;
+
+  transform: none !important;
+  z-index: 10;
+  flex: 0 0 auto;
+}
+
+.avatar-container > img:first-child {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain;
+  display: block;
+}
+
+/* Accessories stay attached to dog */
+.accessory {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* Customizer panel */
+.avatar-customizer-shell {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  z-index: 5;
+  flex: 0 0 auto;
+}
+
+.avatar-customizer {
+  width: var(--panel-width) !important;
+
+  margin: 0 !important;
+  transform: none !important;
+
+  padding: 14px;
+  border-radius: 24px;
+
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(246, 248, 255, 0.97) 100%
+  );
+
+  border: 1px solid rgba(255, 255, 255, 0.7);
+
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.accessory-panel {
+  max-height: clamp(135px, 18vh, 180px);
+}
+
+/* Slightly tighter layout on shorter screens */
+@media (max-height: 760px) {
+  .room {
+    --dog-size: clamp(200px, 24vmin, 235px);
+    --panel-gap: 10px;
+    --bottom-space: 76px;
+
+    --avatar-stack-nudge: 78px;
+  }
+
+  .avatar-stage {
+    padding-top: 58px;
+  }
+
+  .avatar-customizer {
+    padding: 12px;
+  }
+
+  .accessory-panel {
+    max-height: 130px;
+  }
+}
+
+/* Mobile width */
+@media (max-width: 768px) {
+  .room {
+    --dog-size: clamp(200px, 30vmin, 235px);
+    --panel-width: calc(100vw - 20px);
+    --panel-gap: 12px;
+    --bottom-space: 94px;
+
+    --avatar-stack-nudge: 26px;
+  }
+
+  .avatar-stage {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .avatar-customizer {
+    border-radius: 22px;
+    padding: 12px;
+  }
+
+  .accessory-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 8px;
+  }
+
+  .accessory-filters button {
+    flex: 0 0 auto;
+  }
+
+  .accessory-panel {
+    grid-template-columns: repeat(2, 1fr);
+    max-height: 145px;
+  }
+}
+
+/* Keeps accessory panel height consistent whether user has items or not */
+.accessory-panel {
+  min-height: 170px;
+  max-height: 170px;
+  overflow-y: auto;
+}
+
+/* Empty state now fills the same panel area */
+.accessory-panel--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.accessory-panel--empty .accessory-empty-state {
+  width: 100%;
+  height: 100%;
+  min-height: unset;
+  border-radius: 20px;
+}
+
+/* =========================================================
+   RESPONSIVE AVATAR TUNING
+   Full screen stays as-is. These only fix smaller views.
+========================================================= */
+
+/* Squished desktop / laptop */
+@media (max-width: 1300px) and (min-width: 769px) {
+  .room {
+    --dog-size: clamp(235px, 18vmin, 285px);
+    --panel-width: min(860px, calc(100vw - 48px));
+    --bottom-space: 82px;
+    --avatar-stack-nudge: 54px;
+  }
+
+  .accessory-panel {
+    min-height: 160px;
+    max-height: 160px;
+  }
+}
+
+/* Smaller laptop / tablet-ish portrait */
+@media (max-width: 950px) and (min-width: 769px) {
+  .room {
+    --dog-size: clamp(220px, 22vmin, 260px);
+    --panel-width: min(760px, calc(100vw - 36px));
+    --bottom-space: 88px;
+    --avatar-stack-nudge: 44px;
+  }
+
+  .accessory-panel {
+    min-height: 155px;
+    max-height: 155px;
+  }
+}
+
+/* Phone / narrow screens */
+@media (max-width: 768px) {
+  .room {
+    --dog-size: clamp(190px, 34vw, 230px);
+    --panel-width: calc(100vw - 32px);
+    --bottom-space: 100px;
+    --avatar-stack-nudge: 24px;
+  }
+
+  .accessory-panel {
+    min-height: 180px;
+    max-height: 180px;
+  }
+}
+
+/* Very short screens */
+@media (max-height: 720px) {
+  .room {
+    --dog-size: clamp(190px, 22vmin, 235px);
+    --bottom-space: 74px;
+    --avatar-stack-nudge: 34px;
+  }
+
+  .accessory-panel {
+    min-height: 130px;
+    max-height: 130px;
+  }
+}
+
+/* =========================================================
+   AVATAR SCREEN LOCKED LAYOUT
+   Panel is anchored first. Dog sits above the panel.
+========================================================= */
+
+.avatar-screen {
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+.room {
+  --dog-size: clamp(250px, 16vw, 305px);
+
+  --panel-width: min(720px, calc(100vw - 48px));
+  --accessory-panel-height: 170px;
+
+  --panel-bottom: 0px;
+  --dog-panel-gap: 2px;
+
+  --panel-total-height: calc(var(--accessory-panel-height) + 82px);
+
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+
+  position: relative;
+  overflow: hidden;
+
+  background-image: url("/avatar-bg-screen-4.png");
+  background-size: cover;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+
+  box-sizing: border-box;
+}
+
+/* Stop flex/nudge positioning from controlling the layout */
+.avatar-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: block;
+  margin: 0;
+  padding: 0;
+  transform: none !important;
+}
+
+/* Dog is positioned relative to the panel */
+.avatar-container {
+  position: absolute !important;
+  left: 50% !important;
+  right: auto !important;
+  top: auto !important;
+
+  bottom: calc(
+    var(--panel-bottom) +
+    var(--panel-total-height) +
+    var(--dog-panel-gap)
+  ) !important;
+
+  width: var(--dog-size) !important;
+  height: var(--dog-size) !important;
+
+  transform: translateX(-50%) !important;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  z-index: 10;
+}
+
+.avatar-container > img:first-child {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain;
+  display: block;
+}
+
+/* Accessories stay attached to dog */
+.accessory {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* Accessories card is now the anchor */
+.avatar-customizer-shell {
+  position: absolute !important;
+  left: 50%;
+  bottom: var(--panel-bottom);
+
+  width: var(--panel-width);
+  transform: translateX(-50%) !important;
+
+  display: flex;
+  justify-content: center;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  z-index: 5;
+}
+
+.avatar-customizer {
+  width: 100% !important;
+
+  margin: 0 !important;
+  transform: none !important;
+
+  padding: 14px;
+  border-radius: 24px;
+
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(246, 248, 255, 0.97) 100%
+  );
+
+  border: 1px solid rgba(255, 255, 255, 0.7);
+
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.accessory-panel {
+  min-height: var(--accessory-panel-height) !important;
+  max-height: var(--accessory-panel-height) !important;
+  overflow-y: auto;
+}
+
+/* Empty state fills same space as filled accessory grid */
+.accessory-panel--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.accessory-panel--empty .accessory-empty-state {
+  width: 100%;
+  height: 100%;
+  min-height: unset;
+  border-radius: 20px;
+}
+
+/* Medium / squished desktop */
+@media (max-width: 1300px) and (min-width: 769px) {
+  .room {
+    --dog-size: clamp(235px, 18vw, 285px);
+    --panel-width: min(860px, calc(100vw - 44px));
+    --accessory-panel-height: 160px;
+
+    --panel-bottom: 104px;
+    --dog-panel-gap: 20px;
+  }
+}
+
+/* Narrow tablet-ish width */
+@media (max-width: 950px) and (min-width: 769px) {
+  .room {
+    --dog-size: clamp(225px, 23vw, 265px);
+    --panel-width: calc(100vw - 44px);
+    --accessory-panel-height: 160px;
+
+    --panel-bottom: 102px;
+    --dog-panel-gap: 18px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .room {
+    --dog-size: clamp(210px, 42vw, 250px);
+    --panel-width: calc(100vw - 32px);
+    --accessory-panel-height: 180px;
+
+    --panel-bottom: 96px;
+    --dog-panel-gap: 18px;
+  }
+
+  .avatar-customizer {
+    padding: 12px;
+    border-radius: 22px;
+  }
+
+  .accessory-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 8px;
+  }
+
+  .accessory-filters button {
+    flex: 0 0 auto;
+  }
+
+  .accessory-panel {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Short screens */
+@media (max-height: 720px) {
+  .room {
+    --dog-size: clamp(200px, 22vmin, 245px);
+    --accessory-panel-height: 130px;
+
+    --panel-bottom: 76px;
+    --dog-panel-gap: 14px;
+  }
+
+  .avatar-customizer {
+    padding: 10px;
+  }
+}
+
