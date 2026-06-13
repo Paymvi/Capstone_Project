@@ -20,28 +20,28 @@ export default function SecondScreen({ userId, collectedItems, equipped, setEqui
       type: "hat", 
       name: "Crown", 
       src: "/Roamie-Crown-2.png",
-      position: { bottom: "70%", height: "40px", left: "47%" }
+      position: { bottom: "81%", height: "50px", left: "47%" }
     },
     { 
       id: "hat_santahat",             // santahat
       type: "hat", 
       name: "SantaHat", 
       src: "/Roamie-SantaHat-z.png",
-      position: { bottom: "70%", height: "60px", left: "52%" }
+      position: { bottom: "81%", height: "60px", left: "59%" }
     },
     { 
       id: "hat_flower",             // flower
       type: "hat", 
       name: "Flower", 
       src: "/Roamie-Flower.png",
-      position: { bottom: "70%", height: "45px", left: "56%" }
+      position: { bottom: "80%", height: "45px", left: "60%" }
     }, 
     { 
       id: "body_coat",                // coat
       type: "body", 
       name: "Coat", 
       src: "/Roamie-Coat-z2.png",
-      position: { bottom: "18%", width: "180px", height: "105px", left: "47%" }
+      position: { bottom: "4%", width: "205px", height: "120px", left: "46%" }
     
     },
     { 
@@ -49,17 +49,17 @@ export default function SecondScreen({ userId, collectedItems, equipped, setEqui
       type: "outside", 
       name: "Shield", 
       src: "/Roamie-Shield-z.png",
-      position: { bottom: "20%", height: "112px", left: "69%"}
+      position: { bottom: "7%", height: "112px", left: "77%"}
     },
     { 
       id: "outside_dumbbell",             // dumbbell
       type: "outside", 
       name: "Dumbell", 
       src: "/dumbell.png",
-      position: { bottom: "15%", height: "235px", left: "50%"}
+      position: { bottom: "2%", height: "235px", left: "53%"}
     },
     {    
-      id: "outside_pizza",             // dumbbell
+      id: "outside_pizza",             // pizza
       type: "outside", 
       name: "Pizza", 
       src: "/pizza.png",
@@ -209,7 +209,7 @@ export default function SecondScreen({ userId, collectedItems, equipped, setEqui
 
               {equipped.hat && (
                 <img
-                  className="accessory accessory-hat"
+                  className={`accessory accessory-hat accessory-${equipped.body}`}
                   src={ACCESSORIES.find(a => a.id === equipped.hat)?.src}
                   style={ACCESSORIES.find(a => a.id === equipped.hat)?.position}
                 />
@@ -217,7 +217,7 @@ export default function SecondScreen({ userId, collectedItems, equipped, setEqui
 
               {equipped.body && (
                 <img
-                  className="accessory accessory-body"
+                  className={`accessory accessory-body accessory-${equipped.body}`}
                   src={ACCESSORIES.find(a => a.id === equipped.body)?.src}
                   style={ACCESSORIES.find(a => a.id === equipped.body)?.position}
                 />
@@ -225,7 +225,7 @@ export default function SecondScreen({ userId, collectedItems, equipped, setEqui
 
               {equipped.outside && (
                 <img
-                  className="accessory accessory-outside"
+                  className={`accessory accessory-outside accessory-${equipped.outside}`}
                   src={ACCESSORIES.find(a => a.id === equipped.outside)?.src}
                   style={ACCESSORIES.find(a => a.id === equipped.outside)?.position}
                 />
